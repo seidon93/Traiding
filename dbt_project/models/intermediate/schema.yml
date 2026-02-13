@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_transactions_with_fx
+    description: "Transactions with FX-normalized amounts to CZK and fiscal period fields"
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+      - name: amount_czk
+        tests: [not_null]
+
+  - name: int_costs_vs_budget
+    description: "Budget plan vs actual with variance categorization by cost center and account"
+    columns:
+      - name: planned_amount
+        tests: [not_null]
+      - name: actual_amount
+        tests: [not_null]
+
+  - name: int_revenue_by_product
+    description: "Aggregated revenue by product, customer segment, channel, and period with gross margin"
+    columns:
+      - name: revenue_excl_vat
+        tests: [not_null]
+
+  - name: int_cost_center_expenses
+    description: "All expense types (payroll, purchases, production) by cost center and period"
+    columns:
+      - name: total_expenses
+        tests: [not_null]

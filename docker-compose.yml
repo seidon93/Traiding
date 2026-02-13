@@ -1,0 +1,127 @@
+# =============================================================
+# Financial Controlling – Docker Compose
+# =============================================================
+# Usage:  docker-compose up -d
+# UI:     Airflow → http://localhost:8080  (admin / admin)
+# DB:     PostgreSQL → localhost:5432
+# =============================================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.3-python3.11
+  env_file: .env
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://financial_admin:fin_controlling_2024@postgres:5432/airflow
+    AIRFLOW__WEBSERVER__SECRET_KEY: financial_controlling_secret_key_2024
+    AIRFLOW__CORE__FERNET_KEY: YlCImzjge_TeZc7pvd7iGX3IJn6OFnHGJlR0MR7Gkms=
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    # Connection to the financial DB (used by DAGs)
+    FINANCIAL_DB_HOST: postgres
+    FINANCIAL_DB_PORT: "5432"
+    FINANCIAL_DB_USER: financial_admin
+    FINANCIAL_DB_PASSWORD: fin_controlling_2024
+    FINANCIAL_DB_NAME: financial_controlling
+    GITHUB_RAW_BASE_URL: https://raw.githubusercontent.com/seidon93/Data/main/financial_dataset
+  volumes:
+    - ./orchestration/dags:/opt/airflow/dags
+    - ./orchestration/logs:/opt/airflow/logs
+    - ./scripts:/opt/airflow/scripts
+    - ./dbt_project:/opt/airflow/dbt_project
+    - ./financial_dataset:/opt/airflow/data
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - financial_net
+
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL – Data Warehouse
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: financial_db
+    env_file: .env
+    environment:
+      POSTGRES_USER: financial_admin
+      POSTGRES_PASSWORD: fin_controlling_2024
+      POSTGRES_DB: financial_controlling
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financial_admin -d financial_controlling"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financial_net
+
+  # ─────────────────────────────────────────────
+  # Airflow – Init (one-shot setup)
+  # ─────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow_init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com || true
+        # Install Python deps for DAGs
+        pip install --quiet polars sqlalchemy psycopg2-binary
+    restart: "no"
+
+  # ─────────────────────────────────────────────
+  # Airflow – Webserver
+  # ─────────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow_webserver
+    command: >
+      bash -c "pip install --quiet polars sqlalchemy psycopg2-binary &&
+               airflow webserver --port 8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  # ─────────────────────────────────────────────
+  # Airflow – Scheduler
+  # ─────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow_scheduler
+    command: >
+      bash -c "pip install --quiet polars sqlalchemy psycopg2-binary &&
+               airflow scheduler"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  financial_net:
+    driver: bridge

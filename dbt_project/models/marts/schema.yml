@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: >
+      Final enriched transaction fact table with all dimensions joined.
+      Contains 500k accounting transactions with FX-normalized amounts,
+      account details, cost center, branch, region, profit center, and project info.
+    columns:
+      - name: transaction_id
+        description: "Primary key – unique transaction identifier"
+        tests: [unique, not_null]
+      - name: amount_czk
+        description: "Transaction amount normalized to CZK"
+        tests: [not_null]
+      - name: currency
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['CZK', 'EUR', 'USD']
+      - name: debit_account
+        tests: [not_null]
+      - name: credit_account
+        tests: [not_null]
+      - name: cost_center_id
+        tests: [not_null]
+
+  - name: dim_cost_centers
+    description: >
+      Enriched cost center dimension with parent hierarchy,
+      branch details, and region/country info.
+    columns:
+      - name: cost_center_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: cost_center_name
+        tests: [not_null]
+
+  - name: dim_accounts
+    description: >
+      Chart of accounts with English type translations,
+      P&L vs Balance Sheet flags, and P&L line item classification.
+    columns:
+      - name: account_number
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: account_type_en
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Revenue', 'Expense', 'Asset', 'Liability']
+
+  - name: pnl_report
+    description: >
+      Profit & Loss report aggregating revenue and expense transactions
+      by period, cost center, and profit center. Includes YTD running totals.
+      Revenue from class 6 accounts (credit side),
+      Expenses from class 5 accounts (debit side).
+    columns:
+      - name: fiscal_period
+        tests: [not_null]
+      - name: amount_czk
+        tests: [not_null]
+      - name: pnl_category
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Revenue', 'Expense']

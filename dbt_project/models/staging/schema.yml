@@ -1,0 +1,199 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: "Raw financial data ingested from GitHub CSV files"
+    tables:
+      - name: dim_regiony
+        description: "Regions / geographical areas"
+      - name: dim_pobocky
+        description: "Branch offices"
+      - name: dim_strediska
+        description: "Cost centers (střediska)"
+      - name: dim_profit_centra
+        description: "Profit centers"
+      - name: dim_projekty
+        description: "Projects"
+      - name: dim_ucty
+        description: "Chart of accounts (účtový rozvrh)"
+      - name: dim_zamestnanci
+        description: "Employees / HR data"
+      - name: dim_produkty
+        description: "Products"
+      - name: dim_zakaznici
+        description: "Customers"
+      - name: dim_dodavatele
+        description: "Suppliers"
+      - name: fact_transakce
+        description: "Main accounting transactions (500k rows)"
+      - name: fact_mzdy
+        description: "Monthly payroll data"
+      - name: fact_prodeje
+        description: "Sales invoices (100k rows)"
+      - name: fact_nakupy
+        description: "Purchase orders (50k rows)"
+      - name: fact_vyrobni_zakazky
+        description: "Production / manufacturing orders (20k rows)"
+      - name: fact_cashflow
+        description: "Cash flow movements (80k rows)"
+      - name: fact_budget
+        description: "Budget vs actual by cost center and account"
+
+models:
+  - name: stg_regions
+    description: "Cleaned region dimension"
+    columns:
+      - name: region_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: region_name
+        tests: [not_null]
+
+  - name: stg_branches
+    description: "Cleaned branch/office dimension"
+    columns:
+      - name: branch_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: region_id
+        tests: [not_null]
+
+  - name: stg_cost_centers
+    description: "Cleaned cost center dimension"
+    columns:
+      - name: cost_center_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: branch_id
+        tests: [not_null]
+
+  - name: stg_profit_centers
+    description: "Cleaned profit center dimension"
+    columns:
+      - name: profit_center_id
+        description: "Primary key"
+        tests: [unique, not_null]
+
+  - name: stg_projects
+    description: "Cleaned project dimension"
+    columns:
+      - name: project_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: budget
+        tests: [not_null]
+
+  - name: stg_accounts
+    description: "Cleaned chart of accounts"
+    columns:
+      - name: account_number
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: account_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Aktiva', 'Pasiva', 'Náklady', 'Výnosy']
+
+  - name: stg_employees
+    description: "Cleaned employee dimension"
+    columns:
+      - name: employee_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: gross_salary
+        tests: [not_null]
+
+  - name: stg_products
+    description: "Cleaned product dimension"
+    columns:
+      - name: product_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: selling_price
+        tests: [not_null]
+      - name: cost_price
+        tests: [not_null]
+
+  - name: stg_customers
+    description: "Cleaned customer dimension"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests: [unique, not_null]
+
+  - name: stg_suppliers
+    description: "Cleaned supplier dimension"
+    columns:
+      - name: supplier_id
+        description: "Primary key"
+        tests: [unique, not_null]
+
+  - name: stg_transactions
+    description: "Cleaned main accounting transactions"
+    columns:
+      - name: transaction_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: amount
+        tests: [not_null]
+      - name: amount_czk
+        tests: [not_null]
+      - name: currency
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['CZK', 'EUR', 'USD']
+
+  - name: stg_payroll
+    description: "Cleaned monthly payroll data"
+    columns:
+      - name: employee_id
+        tests: [not_null]
+      - name: gross_salary_total
+        tests: [not_null]
+
+  - name: stg_sales
+    description: "Cleaned sales / revenue data"
+    columns:
+      - name: invoice_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: total_excl_vat
+        tests: [not_null]
+
+  - name: stg_purchases
+    description: "Cleaned purchase orders"
+    columns:
+      - name: order_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: total_excl_vat
+        tests: [not_null]
+
+  - name: stg_production_orders
+    description: "Cleaned production orders"
+    columns:
+      - name: production_order_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: total_cost
+        tests: [not_null]
+
+  - name: stg_cashflow
+    description: "Cleaned cash flow movements"
+    columns:
+      - name: cashflow_id
+        description: "Primary key"
+        tests: [unique, not_null]
+      - name: amount
+        tests: [not_null]
+
+  - name: stg_budget
+    description: "Cleaned budget vs actual"
+    columns:
+      - name: planned_amount
+        tests: [not_null]
+      - name: actual_amount
+        tests: [not_null]
