@@ -66,3 +66,59 @@ models:
           - not_null
           - accepted_values:
               values: ['Revenue', 'Expense']
+
+  - name: mart_opex_budget
+    description: "Operational expenditure budget by OPEX category, cost center, and period"
+    columns:
+      - name: cost_center_id
+        tests: [not_null]
+      - name: opex_category
+        tests: [not_null]
+      - name: planned_amount
+        tests: [not_null]
+      - name: actual_amount
+        tests: [not_null]
+
+  - name: mart_capex_budget
+    description: "Capital expenditure tracking: investments, depreciation, net book value"
+    columns:
+      - name: fiscal_period
+        tests: [not_null]
+
+  - name: mart_hr_budget
+    description: "HR workforce budget: FTE count, salary breakdown, YoY growth"
+    columns:
+      - name: cost_center_id
+        tests: [not_null]
+      - name: headcount
+        tests: [not_null]
+      - name: total_employer_cost
+        tests: [not_null]
+
+  - name: mart_sales_forecast
+    description: "Sales actuals vs 3-month rolling forecast by product × region × channel"
+    columns:
+      - name: fiscal_period
+        tests: [not_null]
+      - name: revenue_actual
+        tests: [not_null]
+
+  - name: mart_variance_analysis
+    description: "Full variance decomposition: volume, price, cost, and mix variances"
+    columns:
+      - name: fiscal_period
+        tests: [not_null]
+      - name: product_category
+        tests: [not_null]
+
+  - name: mart_kpis
+    description: "Key Performance Indicators: EBITDA, Gross Margin, DSO, DPO, Burn Rate, ROA, ROE"
+    columns:
+      - name: fiscal_period
+        tests: [not_null]
+      - name: total_revenue
+        tests: [not_null]
+      - name: ebitda_margin_pct
+        tests: [not_null]
+      - name: gross_margin_pct
+        tests: [not_null]

@@ -1,6 +1,6 @@
 # 🏦 Financial Controlling – Data Engineering Stack
 
-Production-grade financial data pipeline for Czech accounting data. Transforms 17 raw CSV files into analytical-ready tables with full auditability, data quality tests, and automated orchestration.
+Production-grade financial data pipeline for Czech accounting data. Transforms 17 raw CSV files into analytical-ready tables with full auditability, data quality tests, automated orchestration, and interactive dashboard.
 
 ---
 
@@ -21,7 +21,7 @@ graph LR
         RAW["raw schema<br>17 tables"]
         STG["staging schema<br>17 views"]
         INT["intermediate schema<br>4 views"]
-        MRT["marts schema<br>4 tables"]
+        MRT["marts schema<br>10 tables"]
     end
 
     subgraph dbt
@@ -30,15 +30,21 @@ graph LR
         DOC["dbt docs"]
     end
 
+    subgraph Dashboard
+        VIZ["📊 Interactive<br>HTML Dashboard"]
+    end
+
     GH --> AF --> PY --> RAW
     RAW --> DBT --> STG --> INT --> MRT
     DBT --> TST
     DBT --> DOC
+    MRT --> VIZ
 
     style RAW fill:#e74c3c,color:#fff
     style STG fill:#f39c12,color:#fff
     style INT fill:#3498db,color:#fff
     style MRT fill:#27ae60,color:#fff
+    style VIZ fill:#8b5cf6,color:#fff
 ```
 
 ---
@@ -146,12 +152,10 @@ python ingest.py
 ### 3. Run dbt Transformations
 
 ```bash
-# Enter the Airflow container (or any container with dbt installed)
 docker exec -it airflow_webserver bash
 pip install dbt-postgres
 cd /opt/airflow/dbt_project
 
-# Install dependencies & run
 dbt deps
 dbt run
 dbt test
@@ -166,11 +170,23 @@ dbt docs serve --port 8081
 
 Open `http://localhost:8081` to view the interactive lineage graph.
 
+### 5. Open Dashboard
+
+Open `dashboard/index.html` in your browser — no server required:
+
+```bash
+start dashboard/index.html   # Windows
+open dashboard/index.html    # macOS
+```
+
 ---
 
 ## 📁 Repository Structure
 
 ```
+├── dashboard/                      # Interactive visualization
+│   ├── index.html                  # 6-tab financial dashboard
+│   └── data.js                     # Pre-computed mock data
 ├── dbt_project/                    # SQL transformations & tests
 │   ├── models/
 │   │   ├── staging/                # 17 staging models (CZ → EN columns)
@@ -179,11 +195,17 @@ Open `http://localhost:8081` to view the interactive lineage graph.
 │   │   │   ├── int_costs_vs_budget.sql
 │   │   │   ├── int_revenue_by_product.sql
 │   │   │   └── int_cost_center_expenses.sql
-│   │   └── marts/                  # 4 final analytical tables
+│   │   └── marts/                  # 10 final analytical tables
 │   │       ├── fct_transactions.sql
 │   │       ├── dim_cost_centers.sql
 │   │       ├── dim_accounts.sql
-│   │       └── pnl_report.sql
+│   │       ├── pnl_report.sql
+│   │       ├── mart_opex_budget.sql      # OPEX by category
+│   │       ├── mart_capex_budget.sql     # Investments + depreciation
+│   │       ├── mart_hr_budget.sql        # FTE + salary plan
+│   │       ├── mart_sales_forecast.sql   # Revenue forecast
+│   │       ├── mart_variance_analysis.sql # 4-way variance decomposition
+│   │       └── mart_kpis.sql             # EBITDA, DSO, DPO, ROA, ROE
 │   ├── tests/
 │   │   └── test_double_entry_balance.sql
 │   ├── dbt_project.yml
@@ -205,6 +227,21 @@ Open `http://localhost:8081` to view the interactive lineage graph.
 
 ---
 
+## 📊 Dashboard
+
+Interactive HTML dashboard with 6 tabs — no backend required, just open `dashboard/index.html`:
+
+| Tab | Content |
+|---|---|
+| **📈 KPIs** | Revenue, EBITDA, EBITDA Margin, Gross Margin, ROA, ROE, DSO, DPO, Burn Rate |
+| **💰 OPEX** | Operating expenses by category (Rent, Energy, Personnel, Marketing), Plan vs Actual |
+| **🏗️ CAPEX** | Capital investments, depreciation, net book value by asset type |
+| **👥 HR Budget** | FTE count, salary plan, bonus ratio, employer contributions, YoY growth |
+| **🛒 Sales Forecast** | Actual vs 3M rolling forecast, by product category/region/channel |
+| **📊 Variance** | Volume, Price, Cost, Mix variance decomposition with detail table |
+
+---
+
 ## 🧪 Data Quality Tests
 
 | Test | Target | Type |
@@ -216,31 +253,32 @@ Open `http://localhost:8081` to view the interactive lineage graph.
 
 ---
 
-## 🔄 dbt Lineage
+## 📊 Key Outputs
 
-The transformation pipeline processes data through 3 layers:
+### Marts Layer (10 tables)
 
-```
-17 CSV files → raw (PostgreSQL) → staging (17 views) → intermediate (4 views) → marts (4 tables)
-```
-
-Run `dbt docs generate && dbt docs serve` to view the full interactive lineage graph.
+| Model | Description |
+|---|---|
+| `pnl_report` | P&L by period, cost center, profit center with YTD |
+| `fct_transactions` | 500k enriched transactions with all dimensions, FX-normalized |
+| `dim_cost_centers` | Full hierarchy: center → branch → region → country |
+| `dim_accounts` | Chart of accounts with P&L line classification |
+| `mart_opex_budget` | OPEX breakdown: Rent, Energy, Personnel, Marketing, Taxes |
+| `mart_capex_budget` | Investments, depreciation, net book value per asset type |
+| `mart_hr_budget` | FTE, salary plan, bonuses, employer costs, YoY growth |
+| `mart_sales_forecast` | Actual vs forecast by product × region × channel |
+| `mart_variance_analysis` | Volume, Price, Cost, Mix variance decomposition |
+| `mart_kpis` | EBITDA, Gross Margin, DSO, DPO, ROA, ROE, Burn Rate |
 
 ---
 
-## 📊 Key Outputs
+## 🔄 dbt Lineage
 
-### `pnl_report` (Profit & Loss)
-- Revenue vs Expenses by period, cost center, profit center
-- P&L line items: Product Revenue, Service Revenue, Personnel Costs, Depreciation, etc.
-- YTD running totals
+```
+17 CSV files → raw (PostgreSQL) → staging (17 views) → intermediate (4 views) → marts (10 tables)
+```
 
-### `fct_transactions`
-- 500k transactions enriched with all 6 dimensions
-- FX-normalized to CZK
-
-### `dim_cost_centers`
-- Full hierarchy: cost center → branch → region → country
+Run `dbt docs generate && dbt docs serve` to view the full interactive lineage graph.
 
 ---
 
@@ -252,4 +290,5 @@ Run `dbt docs generate && dbt docs serve` to view the full interactive lineage g
 | Orchestration | Apache Airflow 2.9 |
 | Ingestion | Python 3.11 + Polars |
 | Transformation | dbt-core + dbt-postgres |
+| Visualization | Chart.js + Vanilla HTML/CSS/JS |
 | Infrastructure | Docker Compose |

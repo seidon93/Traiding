@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Controlling Dashboard</title>
+    <meta name="description" content="Interactive financial controlling dashboard – OPEX, CAPEX, HR Budget, Sales Forecast, Variance Analysis, KPIs">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           DESIGN SYSTEM
+           ═══════════════════════════════════════════ */
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-card-hover: rgba(31, 41, 55, 0.8);
+            --border: rgba(75, 85, 99, 0.3);
+            --border-glow: rgba(99, 102, 241, 0.3);
+
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --info: #3b82f6;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 20px rgba(99,102,241,0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(59,130,246,0.03) 0%, transparent 50%);
+            z-index: -1;
+            animation: ambientFloat 30s ease-in-out infinite;
+        }
+
+        @keyframes ambientFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-2%, 1%) rotate(1deg); }
+            66% { transform: translate(1%, -1%) rotate(-1deg); }
+        }
+
+        /* ═══════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════ */
+        .header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            background: rgba(10, 14, 26, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--success-bg);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--success);
+        }
+        .header-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ═══════════════════════════════════════════
+           TABS
+           ═══════════════════════════════════════════ */
+        .tabs {
+            max-width: 1400px;
+            margin: 24px auto 0;
+            padding: 0 32px;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .tab:hover {
+            color: var(--text-secondary);
+            background: rgba(99,102,241,0.05);
+        }
+        .tab.active {
+            color: var(--text-primary);
+            background: var(--bg-card);
+            border-color: var(--border);
+            box-shadow: var(--shadow-glow);
+        }
+        .tab .tab-icon { margin-right: 6px; }
+
+        /* ═══════════════════════════════════════════
+           CONTENT
+           ═══════════════════════════════════════════ */
+        .content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 32px 60px;
+        }
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .tab-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ═══════════════════════════════════════════
+           CARDS
+           ═══════════════════════════════════════════ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+        .gap-20 { gap: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+        .mb-24 { margin-bottom: 24px; }
+
+        @media (max-width: 1024px) {
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-6 { grid-template-columns: repeat(3, 1fr); }
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .grid-2, .grid-3, .grid-4, .grid-6 { grid-template-columns: 1fr; }
+            .content { padding: 16px; }
+            .tabs { padding: 0 16px; }
+        }
+
+        /* ═══════════════════════════════════════════
+           HERO / KPI CARDS
+           ═══════════════════════════════════════════ */
+        .hero-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .hero-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+        }
+        .hero-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+        .hero-card .value {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        .hero-card .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .hero-card .sub .up { color: var(--success); }
+        .hero-card .sub .down { color: var(--danger); }
+        .hero-card .glow {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.15;
+        }
+        .glow-indigo { background: #6366f1; }
+        .glow-green { background: #10b981; }
+        .glow-amber { background: #f59e0b; }
+        .glow-blue { background: #3b82f6; }
+        .glow-rose { background: #f43f5e; }
+        .glow-violet { background: #8b5cf6; }
+
+        /* ═══════════════════════════════════════════
+           VARIANCE TABLE
+           ═══════════════════════════════════════════ */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(75,85,99,0.15);
+            color: var(--text-secondary);
+        }
+        .data-table tr:hover td {
+            background: rgba(99,102,241,0.04);
+        }
+        .data-table .positive { color: var(--success); font-weight: 600; }
+        .data-table .negative { color: var(--danger); font-weight: 600; }
+
+        /* ═══════════════════════════════════════════
+           CHART CONTAINERS
+           ═══════════════════════════════════════════ */
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+        .chart-container canvas {
+            max-height: 350px;
+        }
+
+        /* ═══════════════════════════════════════════
+           BADGES
+           ═══════════════════════════════════════════ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
+        .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+
+        /* ═══════════════════════════════════════════
+           SECTION HEADER
+           ═══════════════════════════════════════════ */
+        .section-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-header .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════ -->
+<header class="header">
+    <div class="header-inner">
+        <div>
+            <h1>📊 Financial Controlling Dashboard</h1>
+            <div class="header-subtitle">Enterprise Financial Analytics • FY 2023–2025</div>
+        </div>
+        <div class="header-badge">Live Data</div>
+    </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     TABS
+     ═══════════════════════════════════════════ -->
+<nav class="tabs" id="tabs">
+    <div class="tab active" data-tab="kpis"><span class="tab-icon">📈</span>KPIs</div>
+    <div class="tab" data-tab="opex"><span class="tab-icon">💰</span>OPEX Budget</div>
+    <div class="tab" data-tab="capex"><span class="tab-icon">🏗️</span>CAPEX Budget</div>
+    <div class="tab" data-tab="hr"><span class="tab-icon">👥</span>HR Budget</div>
+    <div class="tab" data-tab="sales"><span class="tab-icon">🛒</span>Sales Forecast</div>
+    <div class="tab" data-tab="variance"><span class="tab-icon">📊</span>Variance Analysis</div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     CONTENT
+     ═══════════════════════════════════════════ -->
+<main class="content">
+
+    <!-- ──── KPIs ──── -->
+    <section class="tab-panel active" id="panel-kpis">
+        <div class="section-header"><span class="icon" style="background:rgba(99,102,241,0.15);color:#6366f1">📈</span>Key Performance Indicators</div>
+        <div class="grid-6 mb-24" id="kpi-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">EBITDA & Revenue Trend (Monthly)</div>
+                <div class="chart-container"><canvas id="chart-kpi-ebitda"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Margins (%) Trend</div>
+                <div class="chart-container"><canvas id="chart-kpi-margins"></canvas></div>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">DSO & DPO (Days)</div>
+                <div class="chart-container"><canvas id="chart-kpi-dso-dpo"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Cash Flow & Burn Rate</div>
+                <div class="chart-container"><canvas id="chart-kpi-cashflow"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ──── OPEX ──── -->
+    <section class="tab-panel" id="panel-opex">
+        <div class="section-header"><span class="icon" style="background:rgba(245,158,11,0.15);color:#f59e0b">💰</span>Operational Expenditure Budget</div>
+        <div class="grid-4 mb-24" id="opex-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">OPEX by Category – Plan vs Actual</div>
+                <div class="chart-container"><canvas id="chart-opex-bar"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">OPEX Category Distribution</div>
+                <div class="chart-container"><canvas id="chart-opex-doughnut"></canvas></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Monthly OPEX Trend – Top 3 Categories</div>
+            <div class="chart-container"><canvas id="chart-opex-monthly"></canvas></div>
+        </div>
+    </section>
+
+    <!-- ──── CAPEX ──── -->
+    <section class="tab-panel" id="panel-capex">
+        <div class="section-header"><span class="icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">🏗️</span>Capital Expenditure Budget</div>
+        <div class="grid-3 mb-24" id="capex-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">Investment vs Depreciation by Asset Type</div>
+                <div class="chart-container"><canvas id="chart-capex-bar"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Net Book Value Composition</div>
+                <div class="chart-container"><canvas id="chart-capex-doughnut"></canvas></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Quarterly Investment & Depreciation Trend</div>
+            <div class="chart-container"><canvas id="chart-capex-quarterly"></canvas></div>
+        </div>
+    </section>
+
+    <!-- ──── HR ──── -->
+    <section class="tab-panel" id="panel-hr">
+        <div class="section-header"><span class="icon" style="background:rgba(168,85,247,0.15);color:#a855f7">👥</span>HR / Workforce Budget</div>
+        <div class="grid-4 mb-24" id="hr-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">FTE & Total Employer Cost (Monthly 2025)</div>
+                <div class="chart-container"><canvas id="chart-hr-fte-cost"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Contract Type Mix</div>
+                <div class="chart-container"><canvas id="chart-hr-contracts"></canvas></div>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Average Salary & Bonus Ratio</div>
+                <div class="chart-container"><canvas id="chart-hr-salary"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">YoY Cost Growth (%)</div>
+                <div class="chart-container"><canvas id="chart-hr-yoy"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ──── SALES ──── -->
+    <section class="tab-panel" id="panel-sales">
+        <div class="section-header"><span class="icon" style="background:rgba(16,185,129,0.15);color:#10b981">🛒</span>Sales Forecast</div>
+        <div class="grid-4 mb-24" id="sales-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">Revenue – Actual vs Forecast (2025)</div>
+                <div class="chart-container"><canvas id="chart-sales-trend"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Revenue by Product Category (000 CZK)</div>
+                <div class="chart-container"><canvas id="chart-sales-category"></canvas></div>
+            </div>
+        </div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Revenue by Region (000 CZK)</div>
+                <div class="chart-container"><canvas id="chart-sales-region"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Revenue by Channel (000 CZK)</div>
+                <div class="chart-container"><canvas id="chart-sales-channel"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ──── VARIANCE ──── -->
+    <section class="tab-panel" id="panel-variance">
+        <div class="section-header"><span class="icon" style="background:rgba(244,63,94,0.15);color:#f43f5e">📊</span>Variance Analysis</div>
+        <div class="grid-4 mb-24" id="variance-hero-cards"></div>
+        <div class="grid-2 mb-20">
+            <div class="card">
+                <div class="card-title">Variance Decomposition by Product Category</div>
+                <div class="chart-container"><canvas id="chart-variance-decomp"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Monthly Plan vs Actual Revenue</div>
+                <div class="chart-container"><canvas id="chart-variance-monthly"></canvas></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Variance Detail Table</div>
+            <div style="overflow-x:auto">
+                <table class="data-table" id="variance-table"></table>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script src="data.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+const fmt = (n,d=0) => {
+    if(Math.abs(n)>=1e6) return (n/1e6).toFixed(1)+'M';
+    if(Math.abs(n)>=1e3) return (n/1e3).toFixed(d)+'K';
+    return n.toFixed(d);
+};
+const fmtCZK = n => fmt(n) + ' CZK';
+const pct = n => n.toFixed(1) + '%';
+
+function heroCard(label, value, sub, glowClass='glow-indigo') {
+    return `<div class="hero-card">
+        <div class="glow ${glowClass}"></div>
+        <div class="label">${label}</div>
+        <div class="value">${value}</div>
+        <div class="sub">${sub}</div>
+    </div>`;
+}
+
+const chartColors = {
+    indigo: '#6366f1', violet: '#8b5cf6', blue: '#3b82f6',
+    green: '#10b981', amber: '#f59e0b', rose: '#f43f5e',
+    cyan: '#06b6d4', pink: '#ec4899',teal:'#14b8a6',orange:'#f97316'
+};
+const alphaColor = (hex, a) => {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+};
+
+const defaultOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { labels: { color: '#9ca3af', font: { size: 11, family: 'Inter' }, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
+        tooltip: { backgroundColor: 'rgba(17,24,39,0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(75,85,99,0.3)', borderWidth: 1, padding: 12, cornerRadius: 8, titleFont: { weight: '600', family:'Inter' }, bodyFont: { family:'Inter' } }
+    },
+    scales: {
+        x: { ticks: { color: '#6b7280', font: {size:11,family:'Inter'} }, grid: { color: 'rgba(75,85,99,0.15)' } },
+        y: { ticks: { color: '#6b7280', font: {size:11,family:'Inter'} }, grid: { color: 'rgba(75,85,99,0.15)' } }
+    }
+};
+function mergeOpts(custom) {
+    return JSON.parse(JSON.stringify({...defaultOpts, ...custom}));
+}
+
+// ═══════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+    });
+});
+
+// ═══════════════════════════════════════════
+// 1. KPIs TAB
+// ═══════════════════════════════════════════
+(function renderKPIs() {
+    const S = SUMMARY;
+    const K = DATA_KPIS;
+    document.getElementById('kpi-hero-cards').innerHTML = [
+        heroCard('Revenue 2025', fmtCZK(S.total_revenue_2025), `<span class="up">▲ ${S.revenue_growth_pct}%</span> vs 2024`, 'glow-green'),
+        heroCard('EBITDA', fmtCZK(S.ebitda_2025), `Margin: ${S.ebitda_margin_2025}%`, 'glow-indigo'),
+        heroCard('Gross Margin', pct(S.gross_margin_2025), 'Revenue − COGS', 'glow-violet'),
+        heroCard('Avg DSO', S.avg_dso_2025+' days', 'Days Sales Outstanding', 'glow-blue'),
+        heroCard('Avg DPO', S.avg_dpo_2025+' days', 'Days Payables Outstanding', 'glow-amber'),
+        heroCard('FTE', S.total_fte_2025.toString(), 'Active employees', 'glow-rose'),
+    ].join('');
+
+    const last12 = K.periods.slice(-12);
+    const last12Labels = last12.map(p => p.slice(5));
+
+    new Chart(document.getElementById('chart-kpi-ebitda'), {
+        type: 'bar',
+        data: {
+            labels: last12Labels,
+            datasets: [
+                { label: 'Revenue (M CZK)', data: K.total_revenue.slice(-12).map(v=>v/1e6), backgroundColor: alphaColor(chartColors.indigo,0.6), borderColor: chartColors.indigo, borderWidth: 1, borderRadius: 4, order: 2 },
+                { label: 'EBITDA (M CZK)', data: K.ebitda.slice(-12).map(v=>v/1e6), type:'line', borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), pointRadius: 3, tension: 0.3, fill: true, order: 1 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    new Chart(document.getElementById('chart-kpi-margins'), {
+        type: 'line',
+        data: {
+            labels: last12Labels,
+            datasets: [
+                { label: 'EBITDA Margin %', data: K.ebitda_margin_pct.slice(-12), borderColor: chartColors.indigo, backgroundColor: alphaColor(chartColors.indigo,0.1), tension: 0.3, fill: true },
+                { label: 'ROA %', data: K.roa_pct.slice(-12), borderColor: chartColors.amber, tension: 0.3 },
+                { label: 'ROE %', data: K.roe_pct.slice(-12), borderColor: chartColors.rose, tension: 0.3 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    new Chart(document.getElementById('chart-kpi-dso-dpo'), {
+        type: 'line',
+        data: {
+            labels: last12Labels,
+            datasets: [
+                { label: 'DSO (days)', data: K.dso_days.slice(-12), borderColor: chartColors.blue, backgroundColor: alphaColor(chartColors.blue,0.1), tension: 0.3, fill: true },
+                { label: 'DPO (days)', data: K.dpo_days.slice(-12), borderColor: chartColors.amber, backgroundColor: alphaColor(chartColors.amber,0.1), tension: 0.3, fill: true }
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    new Chart(document.getElementById('chart-kpi-cashflow'), {
+        type: 'bar',
+        data: {
+            labels: last12Labels,
+            datasets: [
+                { label: 'Burn Rate (M)', data: K.burn_rate.slice(-12).map(v=>v/1e6), backgroundColor: alphaColor(chartColors.rose,0.5), borderColor: chartColors.rose, borderWidth:1, borderRadius: 4 },
+                { label: 'Net Cash Flow (M)', data: K.net_cashflow.slice(-12).map(v=>v/1e6), type:'line', borderColor: chartColors.green, pointRadius: 3, tension: 0.3 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+})();
+
+// ═══════════════════════════════════════════
+// 2. OPEX TAB
+// ═══════════════════════════════════════════
+(function renderOPEX() {
+    const O = DATA_OPEX;
+    const totalPlan = O.planned.reduce((a,b)=>a+b,0);
+    const totalActual = O.actual.reduce((a,b)=>a+b,0);
+    const totalVar = totalActual - totalPlan;
+    const varPct = (totalVar/totalPlan*100);
+
+    document.getElementById('opex-hero-cards').innerHTML = [
+        heroCard('Total OPEX Plan', fmtCZK(totalPlan), 'Annual budget', 'glow-amber'),
+        heroCard('Total OPEX Actual', fmtCZK(totalActual), `${varPct>0?'▲':'▼'} ${Math.abs(varPct).toFixed(1)}% vs plan`, 'glow-indigo'),
+        heroCard('Largest Category', 'Personnel', fmt(O.actual[2])+' CZK', 'glow-violet'),
+        heroCard('Biggest Overrun', 'Energy', `+${fmt(O.actual[1]-O.planned[1])} CZK`, 'glow-rose'),
+    ].join('');
+
+    new Chart(document.getElementById('chart-opex-bar'), {
+        type: 'bar',
+        data: {
+            labels: O.categories,
+            datasets: [
+                { label: 'Planned', data: O.planned.map(v=>v/1e3), backgroundColor: alphaColor(chartColors.blue,0.5), borderColor: chartColors.blue, borderWidth:1, borderRadius: 4 },
+                { label: 'Actual', data: O.actual.map(v=>v/1e3), backgroundColor: alphaColor(chartColors.indigo,0.7), borderColor: chartColors.indigo, borderWidth:1, borderRadius: 4 }
+            ]
+        },
+        options: mergeOpts({ indexAxis: 'y', plugins: { legend: { position: 'top' } } })
+    });
+
+    new Chart(document.getElementById('chart-opex-doughnut'), {
+        type: 'doughnut',
+        data: {
+            labels: O.categories,
+            datasets: [{ data: O.actual, backgroundColor: [chartColors.indigo,chartColors.amber,chartColors.violet,chartColors.rose,chartColors.blue,chartColors.teal], borderWidth: 0 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
+    });
+
+    new Chart(document.getElementById('chart-opex-monthly'), {
+        type: 'line',
+        data: {
+            labels: MONTHS_SHORT,
+            datasets: [
+                { label: 'Energy & Materials (K)', data: O.monthly_actual[1], borderColor: chartColors.amber, tension:0.3 },
+                { label: 'Personnel (K)', data: O.monthly_actual[2], borderColor: chartColors.violet, tension:0.3 },
+                { label: 'Rent & Services (K)', data: O.monthly_actual[0], borderColor: chartColors.indigo, tension:0.3 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+})();
+
+// ═══════════════════════════════════════════
+// 3. CAPEX TAB
+// ═══════════════════════════════════════════
+(function renderCAPEX() {
+    const C = DATA_CAPEX;
+    const totalInv = C.investment.reduce((a,b)=>a+b,0);
+    const totalDepr = C.depreciation.reduce((a,b)=>a+b,0);
+    const totalNBV = C.net_book_value.reduce((a,b)=>a+b,0);
+
+    document.getElementById('capex-hero-cards').innerHTML = [
+        heroCard('Total Investment', fmtCZK(totalInv), 'FY 2025', 'glow-blue'),
+        heroCard('Total Depreciation', fmtCZK(totalDepr), 'Annual charge', 'glow-amber'),
+        heroCard('Net Book Value', fmtCZK(totalNBV), 'Investment − Depreciation', 'glow-green'),
+    ].join('');
+
+    new Chart(document.getElementById('chart-capex-bar'), {
+        type: 'bar',
+        data: {
+            labels: C.categories,
+            datasets: [
+                { label: 'Investment (M)', data: C.investment.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.blue,0.6), borderRadius:4, borderColor:chartColors.blue, borderWidth:1 },
+                { label: 'Depreciation (M)', data: C.depreciation.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.amber,0.6), borderRadius:4, borderColor:chartColors.amber, borderWidth:1 },
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    new Chart(document.getElementById('chart-capex-doughnut'), {
+        type: 'doughnut',
+        data: {
+            labels: C.categories,
+            datasets: [{ data: C.net_book_value, backgroundColor: [chartColors.blue,chartColors.violet,chartColors.teal], borderWidth:0 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
+    });
+
+    const quarters = ['Q1','Q2','Q3','Q4'];
+    new Chart(document.getElementById('chart-capex-quarterly'), {
+        type: 'bar',
+        data: {
+            labels: quarters,
+            datasets: [
+                { label: 'Tangible Inv. (K)', data: C.quarterly_investment[0], backgroundColor: alphaColor(chartColors.blue,0.5), borderRadius:4 },
+                { label: 'Intangible Inv. (K)', data: C.quarterly_investment[1], backgroundColor: alphaColor(chartColors.violet,0.5), borderRadius:4 },
+                { label: 'Tangible Depr. (K)', data: C.quarterly_depreciation[0], type:'line', borderColor:chartColors.amber, tension:0.3, pointRadius:4 },
+                { label: 'Intangible Depr. (K)', data: C.quarterly_depreciation[1], type:'line', borderColor:chartColors.rose, tension:0.3, pointRadius:4 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+})();
+
+// ═══════════════════════════════════════════
+// 4. HR TAB
+// ═══════════════════════════════════════════
+(function renderHR() {
+    const H = DATA_HR;
+    const lastHC = H.headcount[H.headcount.length-1];
+    const lastFTE = H.effective_fte[H.effective_fte.length-1];
+    const lastAvg = H.avg_gross_salary[H.avg_gross_salary.length-1];
+
+    document.getElementById('hr-hero-cards').innerHTML = [
+        heroCard('Headcount', lastHC.toString(), 'Dec 2025', 'glow-violet'),
+        heroCard('Effective FTE', lastFTE.toString(), 'Full-time equivalent', 'glow-indigo'),
+        heroCard('Avg Gross Salary', fmt(lastAvg)+' CZK', 'Monthly average', 'glow-green'),
+        heroCard('YoY Cost Growth', pct(H.yoy_cost_growth_pct[H.yoy_cost_growth_pct.length-1]), 'Dec 2025 vs Dec 2024', 'glow-amber'),
+    ].join('');
+
+    new Chart(document.getElementById('chart-hr-fte-cost'), {
+        type: 'bar',
+        data: {
+            labels: H.months,
+            datasets: [
+                { label: 'Total Employer Cost (K)', data: H.total_employer_cost, backgroundColor: alphaColor(chartColors.indigo,0.6), borderRadius:4, borderColor:chartColors.indigo, borderWidth:1, yAxisID:'y' },
+                { label: 'Effective FTE', data: H.effective_fte, type:'line', borderColor:chartColors.green, tension:0.3, pointRadius:3, yAxisID:'y1' }
+            ]
+        },
+        options: mergeOpts({ scales: { y: { position:'left', ticks:{color:'#6b7280',font:{size:11}}, grid:{color:'rgba(75,85,99,0.15)'} }, y1: { position:'right', ticks:{color:'#10b981',font:{size:11}}, grid:{drawOnChartArea:false} } } })
+    });
+
+    new Chart(document.getElementById('chart-hr-contracts'), {
+        type: 'doughnut',
+        data: {
+            labels: H.contract_types.labels,
+            datasets: [{ data: H.contract_types.values, backgroundColor: [chartColors.indigo,chartColors.amber,chartColors.rose], borderWidth:0 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
+    });
+
+    new Chart(document.getElementById('chart-hr-salary'), {
+        type: 'line',
+        data: {
+            labels: H.months,
+            datasets: [
+                { label: 'Avg Salary (CZK)', data: H.avg_gross_salary, borderColor: chartColors.indigo, tension:0.3, fill:false, yAxisID:'y' },
+                { label: 'Bonus Ratio %', data: H.bonus_ratio_pct, borderColor: chartColors.amber, tension:0.3, fill:false, yAxisID:'y1' }
+            ]
+        },
+        options: mergeOpts({ scales: { y: { position:'left', ticks:{color:'#6b7280'}, grid:{color:'rgba(75,85,99,0.15)'} }, y1: { position:'right', ticks:{color:'#f59e0b'}, grid:{drawOnChartArea:false} } } })
+    });
+
+    new Chart(document.getElementById('chart-hr-yoy'), {
+        type: 'bar',
+        data: {
+            labels: H.months,
+            datasets: [{ label: 'YoY Cost Growth %', data: H.yoy_cost_growth_pct, backgroundColor: H.yoy_cost_growth_pct.map(v => v>5 ? alphaColor(chartColors.rose,0.6) : alphaColor(chartColors.green,0.6)), borderRadius:4, borderWidth:0 }]
+        },
+        options: mergeOpts({plugins:{legend:{display:false}}})
+    });
+})();
+
+// ═══════════════════════════════════════════
+// 5. SALES TAB
+// ═══════════════════════════════════════════
+(function renderSales() {
+    const S = DATA_SALES;
+    const totalRev = S.actual_revenue.reduce((a,b)=>a+b,0)*1000;
+    const totalForecast = S.forecast_revenue.reduce((a,b)=>a+b,0)*1000;
+    const revVsPlan = ((totalRev-totalForecast)/totalForecast*100);
+
+    document.getElementById('sales-hero-cards').innerHTML = [
+        heroCard('Revenue 2025', fmtCZK(totalRev), `<span class="${revVsPlan>0?'up':'down'}">${revVsPlan>0?'▲':'▼'} ${Math.abs(revVsPlan).toFixed(1)}%</span> vs forecast`, 'glow-green'),
+        heroCard('Forecast 2025', fmtCZK(totalForecast), '3M rolling average', 'glow-blue'),
+        heroCard('Total Units', fmt(S.actual_units.reduce((a,b)=>a+b,0)), 'Units sold 2025', 'glow-violet'),
+        heroCard('Top Category', 'Elektronika', fmt(S.by_category.revenue[0])+'K CZK', 'glow-amber'),
+    ].join('');
+
+    new Chart(document.getElementById('chart-sales-trend'), {
+        type: 'line',
+        data: {
+            labels: S.months,
+            datasets: [
+                { label: 'Actual Revenue (K)', data: S.actual_revenue, borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), tension:0.3, fill:true, pointRadius:4 },
+                { label: 'Forecast Revenue (K)', data: S.forecast_revenue, borderColor: chartColors.blue, borderDash:[6,4], tension:0.3, pointRadius:3 },
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    new Chart(document.getElementById('chart-sales-category'), {
+        type: 'bar',
+        data: {
+            labels: S.by_category.labels,
+            datasets: [{ label: 'Revenue (K CZK)', data: S.by_category.revenue, backgroundColor: [chartColors.indigo,chartColors.blue,chartColors.violet,chartColors.green,chartColors.amber,chartColors.rose,chartColors.cyan,chartColors.teal,chartColors.orange,chartColors.pink], borderRadius:4, borderWidth:0 }]
+        },
+        options: mergeOpts({ indexAxis:'y', plugins:{legend:{display:false}} })
+    });
+
+    new Chart(document.getElementById('chart-sales-region'), {
+        type: 'bar',
+        data: {
+            labels: S.by_region.labels,
+            datasets: [{ label:'Revenue (K CZK)', data: S.by_region.revenue, backgroundColor: alphaColor(chartColors.indigo,0.6), borderColor:chartColors.indigo, borderWidth:1, borderRadius:4 }]
+        },
+        options: mergeOpts({ plugins:{legend:{display:false}} })
+    });
+
+    new Chart(document.getElementById('chart-sales-channel'), {
+        type: 'doughnut',
+        data: {
+            labels: S.by_channel.labels,
+            datasets: [{ data: S.by_channel.revenue, backgroundColor: [chartColors.green,chartColors.indigo,chartColors.amber,chartColors.blue,chartColors.rose], borderWidth:0 }]
+        },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'55%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
+    });
+})();
+
+// ═══════════════════════════════════════════
+// 6. VARIANCE TAB
+// ═══════════════════════════════════════════
+(function renderVariance() {
+    const V = DATA_VARIANCE;
+    const totalVolume = V.volume_variance.reduce((a,b)=>a+b,0);
+    const totalPrice = V.price_variance.reduce((a,b)=>a+b,0);
+    const totalCost = V.cost_variance.reduce((a,b)=>a+b,0);
+    const totalMix = V.mix_variance.reduce((a,b)=>a+b,0);
+
+    document.getElementById('variance-hero-cards').innerHTML = [
+        heroCard('Volume Variance', fmtCZK(totalVolume), totalVolume>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-green'),
+        heroCard('Price Variance', fmtCZK(totalPrice), totalPrice>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-indigo'),
+        heroCard('Cost Variance', fmtCZK(totalCost), totalCost<0 ? '<span class="down">Unfavorable</span>' : '<span class="up">Favorable</span>', 'glow-rose'),
+        heroCard('Mix Variance', fmtCZK(totalMix), totalMix>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-violet'),
+    ].join('');
+
+    new Chart(document.getElementById('chart-variance-decomp'), {
+        type: 'bar',
+        data: {
+            labels: V.categories,
+            datasets: [
+                { label: 'Volume', data: V.volume_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.green,0.6), borderRadius:3, borderWidth:0 },
+                { label: 'Price', data: V.price_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.indigo,0.6), borderRadius:3 },
+                { label: 'Cost', data: V.cost_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.rose,0.6), borderRadius:3 },
+                { label: 'Mix', data: V.mix_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.violet,0.6), borderRadius:3 }
+            ]
+        },
+        options: mergeOpts({ scales: { x: { stacked: true }, y: { stacked: true } } })
+    });
+
+    new Chart(document.getElementById('chart-variance-monthly'), {
+        type: 'line',
+        data: {
+            labels: V.monthly_total.months,
+            datasets: [
+                { label: 'Actual (K)', data: V.monthly_total.actual, borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), tension:0.3, fill:true, pointRadius:4 },
+                { label: 'Plan (K)', data: V.monthly_total.plan, borderColor: chartColors.blue, borderDash:[6,4], tension:0.3, pointRadius:3 }
+            ]
+        },
+        options: mergeOpts({})
+    });
+
+    // Variance table
+    let html = '<thead><tr><th>Category</th><th>Volume</th><th>Price</th><th>Cost</th><th>Mix</th><th>Total</th></tr></thead><tbody>';
+    V.categories.forEach((cat,i) => {
+        const cls = n => n >= 0 ? 'positive' : 'negative';
+        html += `<tr>
+            <td style="color:var(--text-primary);font-weight:500">${cat}</td>
+            <td class="${cls(V.volume_variance[i])}">${fmtCZK(V.volume_variance[i])}</td>
+            <td class="${cls(V.price_variance[i])}">${fmtCZK(V.price_variance[i])}</td>
+            <td class="${cls(-V.cost_variance[i])}">${fmtCZK(V.cost_variance[i])}</td>
+            <td class="${cls(V.mix_variance[i])}">${fmtCZK(V.mix_variance[i])}</td>
+            <td class="${cls(V.total_variance[i])}" style="font-size:14px">${fmtCZK(V.total_variance[i])}</td>
+        </tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('variance-table').innerHTML = html;
+})();
+</script>
+</body>
+</html>
