@@ -4,547 +4,238 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Controlling Dashboard</title>
-    <meta name="description" content="Interactive financial controlling dashboard – OPEX, CAPEX, HR Budget, Sales Forecast, Variance Analysis, KPIs">
+    <meta name="description" content="Interaktivní finanční kontrolingový dashboard – OPEX, CAPEX, HR, Prodeje, Odchylky, KPI">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ═══════════════════════════════════════════
-           DESIGN SYSTEM
-           ═══════════════════════════════════════════ */
         :root {
             --bg-primary: #0a0e1a;
             --bg-secondary: #111827;
             --bg-card: rgba(17, 24, 39, 0.7);
-            --bg-card-hover: rgba(31, 41, 55, 0.8);
             --border: rgba(75, 85, 99, 0.3);
             --border-glow: rgba(99, 102, 241, 0.3);
-
             --text-primary: #f9fafb;
             --text-secondary: #9ca3af;
             --text-muted: #6b7280;
-
             --accent-primary: #6366f1;
-            --accent-secondary: #8b5cf6;
             --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
-
             --success: #10b981;
             --success-bg: rgba(16, 185, 129, 0.1);
             --warning: #f59e0b;
             --warning-bg: rgba(245, 158, 11, 0.1);
             --danger: #ef4444;
             --danger-bg: rgba(239, 68, 68, 0.1);
-            --info: #3b82f6;
-
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --radius-xl: 20px;
-
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-            --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
             --shadow-glow: 0 0 20px rgba(99,102,241,0.15);
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
-            overflow-x: hidden;
         }
-
-        /* Ambient background */
         body::before {
-            content: '';
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
+            content:''; position:fixed; top:-50%; left:-50%; width:200%; height:200%;
             background:
                 radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.04) 0%, transparent 50%),
                 radial-gradient(ellipse at 50% 80%, rgba(59,130,246,0.03) 0%, transparent 50%);
-            z-index: -1;
-            animation: ambientFloat 30s ease-in-out infinite;
+            z-index:-1; animation: ambientFloat 30s ease-in-out infinite;
         }
-
         @keyframes ambientFloat {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(-2%, 1%) rotate(1deg); }
-            66% { transform: translate(1%, -1%) rotate(-1deg); }
+            0%,100%{transform:translate(0,0) rotate(0deg)} 33%{transform:translate(-2%,1%) rotate(1deg)} 66%{transform:translate(1%,-1%) rotate(-1deg)}
         }
 
-        /* ═══════════════════════════════════════════
-           HEADER
-           ═══════════════════════════════════════════ */
-        .header {
-            padding: 24px 32px;
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            background: rgba(10, 14, 26, 0.8);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .header-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.02em;
-        }
-        .header-subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-        .header-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: var(--success-bg);
-            border: 1px solid rgba(16,185,129,0.2);
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--success);
-        }
-        .header-badge::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        /* ── HEADER ── */
+        .header { padding:20px 32px; border-bottom:1px solid var(--border); backdrop-filter:blur(20px); background:rgba(10,14,26,0.8); position:sticky; top:0; z-index:100; }
+        .header-inner { max-width:1440px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+        .header h1 { font-size:20px; font-weight:700; background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; letter-spacing:-0.02em; }
+        .header-subtitle { font-size:12px; color:var(--text-muted); margin-top:2px; }
+        .header-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; background:var(--success-bg); border:1px solid rgba(16,185,129,0.2); border-radius:20px; font-size:11px; font-weight:500; color:var(--success); }
+        .header-badge::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--success); animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-        /* ═══════════════════════════════════════════
-           TABS
-           ═══════════════════════════════════════════ */
-        .tabs {
-            max-width: 1400px;
-            margin: 24px auto 0;
-            padding: 0 32px;
-            display: flex;
-            gap: 4px;
-            overflow-x: auto;
+        /* ── FILTERS ── */
+        .filter-bar { max-width:1440px; margin:16px auto 0; padding:0 32px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        .filter-bar label { font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; }
+        .filter-bar select {
+            padding:7px 12px; border-radius:var(--radius-sm); background:var(--bg-secondary);
+            border:1px solid var(--border); color:var(--text-primary); font-size:12px;
+            font-family:inherit; cursor:pointer; outline:none; min-width:140px;
+            transition: border-color 0.2s;
         }
-        .tab {
-            padding: 10px 20px;
-            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-            background: transparent;
-            border: 1px solid transparent;
-            border-bottom: none;
-            color: var(--text-muted);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            white-space: nowrap;
-            user-select: none;
-        }
-        .tab:hover {
-            color: var(--text-secondary);
-            background: rgba(99,102,241,0.05);
-        }
-        .tab.active {
-            color: var(--text-primary);
-            background: var(--bg-card);
-            border-color: var(--border);
-            box-shadow: var(--shadow-glow);
-        }
-        .tab .tab-icon { margin-right: 6px; }
+        .filter-bar select:hover { border-color:var(--border-glow); }
+        .filter-bar select:focus { border-color:var(--accent-primary); box-shadow:var(--shadow-glow); }
+        .filter-group { display:flex; flex-direction:column; gap:3px; }
 
-        /* ═══════════════════════════════════════════
-           CONTENT
-           ═══════════════════════════════════════════ */
-        .content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px 32px 60px;
-        }
-        .tab-panel {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .tab-panel.active { display: block; }
+        /* ── TABS ── */
+        .tabs { max-width:1440px; margin:16px auto 0; padding:0 32px; display:flex; gap:4px; overflow-x:auto; }
+        .tab { padding:9px 18px; border-radius:var(--radius-sm) var(--radius-sm) 0 0; background:transparent; border:1px solid transparent; border-bottom:none; color:var(--text-muted); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.25s; white-space:nowrap; user-select:none; }
+        .tab:hover { color:var(--text-secondary); background:rgba(99,102,241,0.05); }
+        .tab.active { color:var(--text-primary); background:var(--bg-card); border-color:var(--border); box-shadow:var(--shadow-glow); }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* ── CONTENT ── */
+        .content { max-width:1440px; margin:0 auto; padding:20px 32px 60px; }
+        .tab-panel { display:none; animation:fadeIn 0.35s ease; }
+        .tab-panel.active { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
-        /* ═══════════════════════════════════════════
-           CARDS
-           ═══════════════════════════════════════════ */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            backdrop-filter: blur(12px);
-            transition: all 0.3s ease;
-        }
-        .card:hover {
-            border-color: var(--border-glow);
-            box-shadow: var(--shadow-glow);
-        }
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
+        /* ── CARDS ── */
+        .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; backdrop-filter:blur(12px); transition:all 0.3s; }
+        .card:hover { border-color:var(--border-glow); box-shadow:var(--shadow-glow); }
+        .card-title { font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.05em; }
 
-        /* Grid layouts */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
-        .gap-20 { gap: 20px; }
-        .mb-20 { margin-bottom: 20px; }
-        .mb-24 { margin-bottom: 24px; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+        .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+        .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+        .grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+        .grid-6 { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
+        .mb-18 { margin-bottom:18px; }
+        .mb-20 { margin-bottom:20px; }
+        @media(max-width:1100px) { .grid-4,.grid-5,.grid-6{grid-template-columns:repeat(3,1fr)} .grid-3{grid-template-columns:1fr 1fr} }
+        @media(max-width:700px) { .grid-2,.grid-3,.grid-4,.grid-5,.grid-6{grid-template-columns:1fr} .content{padding:14px} .tabs,.filter-bar{padding:0 14px} }
 
-        @media (max-width: 1024px) {
-            .grid-4 { grid-template-columns: repeat(2, 1fr); }
-            .grid-6 { grid-template-columns: repeat(3, 1fr); }
-            .grid-3 { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 640px) {
-            .grid-2, .grid-3, .grid-4, .grid-6 { grid-template-columns: 1fr; }
-            .content { padding: 16px; }
-            .tabs { padding: 0 16px; }
-        }
+        /* ── HERO CARDS ── */
+        .hero-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:18px; position:relative; overflow:hidden; transition:all 0.3s; }
+        .hero-card:hover { transform:translateY(-2px); border-color:var(--border-glow); box-shadow:var(--shadow-glow); }
+        .hero-card .label { font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+        .hero-card .value { font-size:22px; font-weight:800; letter-spacing:-0.02em; line-height:1.2; }
+        .hero-card .sub { font-size:11px; color:var(--text-muted); margin-top:5px; display:flex; align-items:center; gap:4px; }
+        .hero-card .sub .up { color:var(--success); }
+        .hero-card .sub .down { color:var(--danger); }
+        .hero-card .glow { position:absolute; top:0; right:0; width:70px; height:70px; border-radius:50%; filter:blur(35px); opacity:0.15; }
+        .glow-indigo{background:#6366f1} .glow-green{background:#10b981} .glow-amber{background:#f59e0b} .glow-blue{background:#3b82f6} .glow-rose{background:#f43f5e} .glow-violet{background:#8b5cf6}
 
-        /* ═══════════════════════════════════════════
-           HERO / KPI CARDS
-           ═══════════════════════════════════════════ */
-        .hero-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        .hero-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--border-glow);
-            box-shadow: var(--shadow-glow);
-        }
-        .hero-card .label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
-        .hero-card .value {
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1.1;
-        }
-        .hero-card .sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .hero-card .sub .up { color: var(--success); }
-        .hero-card .sub .down { color: var(--danger); }
-        .hero-card .glow {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.15;
-        }
-        .glow-indigo { background: #6366f1; }
-        .glow-green { background: #10b981; }
-        .glow-amber { background: #f59e0b; }
-        .glow-blue { background: #3b82f6; }
-        .glow-rose { background: #f43f5e; }
-        .glow-violet { background: #8b5cf6; }
+        /* ── TABLE ── */
+        .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .data-table th { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); color:var(--text-muted); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
+        .data-table td { padding:8px 10px; border-bottom:1px solid rgba(75,85,99,0.15); color:var(--text-secondary); }
+        .data-table tr:hover td { background:rgba(99,102,241,0.04); }
+        .data-table .positive { color:var(--success); font-weight:600; }
+        .data-table .negative { color:var(--danger); font-weight:600; }
 
-        /* ═══════════════════════════════════════════
-           VARIANCE TABLE
-           ═══════════════════════════════════════════ */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .data-table th {
-            text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-        .data-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(75,85,99,0.15);
-            color: var(--text-secondary);
-        }
-        .data-table tr:hover td {
-            background: rgba(99,102,241,0.04);
-        }
-        .data-table .positive { color: var(--success); font-weight: 600; }
-        .data-table .negative { color: var(--danger); font-weight: 600; }
-
-        /* ═══════════════════════════════════════════
-           CHART CONTAINERS
-           ═══════════════════════════════════════════ */
-        .chart-container {
-            position: relative;
-            width: 100%;
-        }
-        .chart-container canvas {
-            max-height: 350px;
-        }
-
-        /* ═══════════════════════════════════════════
-           BADGES
-           ═══════════════════════════════════════════ */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        .badge-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
-        .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
-        .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
-
-        /* ═══════════════════════════════════════════
-           SECTION HEADER
-           ═══════════════════════════════════════════ */
-        .section-header {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .section-header .icon {
-            width: 28px;
-            height: 28px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
+        .chart-container { position:relative; width:100%; }
+        .chart-container canvas { max-height:320px; }
+        .section-header { font-size:17px; font-weight:700; margin-bottom:14px; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px; }
+        .section-header .icon { width:26px; height:26px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:13px; }
     </style>
 </head>
 <body>
-
-<!-- ═══════════════════════════════════════════
-     HEADER
-     ═══════════════════════════════════════════ -->
 <header class="header">
     <div class="header-inner">
         <div>
             <h1>📊 Financial Controlling Dashboard</h1>
-            <div class="header-subtitle">Enterprise Financial Analytics • FY 2023–2025</div>
+            <div class="header-subtitle">Data z projektu • Generováno z CSV souborů</div>
         </div>
-        <div class="header-badge">Live Data</div>
+        <div class="header-badge">Reálná data</div>
     </div>
 </header>
 
-<!-- ═══════════════════════════════════════════
-     TABS
-     ═══════════════════════════════════════════ -->
+<!-- FILTERS -->
+<div class="filter-bar" id="filter-bar">
+    <div class="filter-group">
+        <label>Rok</label>
+        <select id="filter-year"><option value="all">Všechny roky</option></select>
+    </div>
+    <div class="filter-group">
+        <label>Region</label>
+        <select id="filter-region"><option value="all">Všechny regiony</option></select>
+    </div>
+    <div class="filter-group">
+        <label>Středisko</label>
+        <select id="filter-cc"><option value="all">Všechna střediska</option></select>
+    </div>
+    <div class="filter-group">
+        <label>Kategorie produktu</label>
+        <select id="filter-category"><option value="all">Všechny kategorie</option></select>
+    </div>
+</div>
+
+<!-- TABS -->
 <nav class="tabs" id="tabs">
-    <div class="tab active" data-tab="kpis"><span class="tab-icon">📈</span>KPIs</div>
-    <div class="tab" data-tab="opex"><span class="tab-icon">💰</span>OPEX Budget</div>
-    <div class="tab" data-tab="capex"><span class="tab-icon">🏗️</span>CAPEX Budget</div>
-    <div class="tab" data-tab="hr"><span class="tab-icon">👥</span>HR Budget</div>
-    <div class="tab" data-tab="sales"><span class="tab-icon">🛒</span>Sales Forecast</div>
-    <div class="tab" data-tab="variance"><span class="tab-icon">📊</span>Variance Analysis</div>
+    <div class="tab active" data-tab="kpis"><span class="tab-icon">📈</span> KPI</div>
+    <div class="tab" data-tab="opex"><span class="tab-icon">💰</span> OPEX</div>
+    <div class="tab" data-tab="capex"><span class="tab-icon">🏗️</span> CAPEX</div>
+    <div class="tab" data-tab="hr"><span class="tab-icon">👥</span> HR Budget</div>
+    <div class="tab" data-tab="sales"><span class="tab-icon">🛒</span> Prodeje</div>
+    <div class="tab" data-tab="variance"><span class="tab-icon">📊</span> Odchylky</div>
 </nav>
 
-<!-- ═══════════════════════════════════════════
-     CONTENT
-     ═══════════════════════════════════════════ -->
 <main class="content">
-
-    <!-- ──── KPIs ──── -->
+    <!-- KPIs -->
     <section class="tab-panel active" id="panel-kpis">
-        <div class="section-header"><span class="icon" style="background:rgba(99,102,241,0.15);color:#6366f1">📈</span>Key Performance Indicators</div>
-        <div class="grid-6 mb-24" id="kpi-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">EBITDA & Revenue Trend (Monthly)</div>
-                <div class="chart-container"><canvas id="chart-kpi-ebitda"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Margins (%) Trend</div>
-                <div class="chart-container"><canvas id="chart-kpi-margins"></canvas></div>
-            </div>
+        <div class="section-header"><span class="icon" style="background:rgba(99,102,241,0.15);color:#6366f1">📈</span>Klíčové ukazatele výkonnosti (KPI)</div>
+        <div class="grid-6 mb-18" id="kpi-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">Tržby & EBITDA (měsíčně)</div><div class="chart-container"><canvas id="c-kpi-ebitda"></canvas></div></div>
+            <div class="card"><div class="card-title">Marže (%)</div><div class="chart-container"><canvas id="c-kpi-margins"></canvas></div></div>
         </div>
         <div class="grid-2">
-            <div class="card">
-                <div class="card-title">DSO & DPO (Days)</div>
-                <div class="chart-container"><canvas id="chart-kpi-dso-dpo"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Cash Flow & Burn Rate</div>
-                <div class="chart-container"><canvas id="chart-kpi-cashflow"></canvas></div>
-            </div>
+            <div class="card"><div class="card-title">DSO & DPO (dny)</div><div class="chart-container"><canvas id="c-kpi-dso"></canvas></div></div>
+            <div class="card"><div class="card-title">Cash Flow & Burn Rate</div><div class="chart-container"><canvas id="c-kpi-cf"></canvas></div></div>
         </div>
     </section>
 
-    <!-- ──── OPEX ──── -->
+    <!-- OPEX -->
     <section class="tab-panel" id="panel-opex">
-        <div class="section-header"><span class="icon" style="background:rgba(245,158,11,0.15);color:#f59e0b">💰</span>Operational Expenditure Budget</div>
-        <div class="grid-4 mb-24" id="opex-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">OPEX by Category – Plan vs Actual</div>
-                <div class="chart-container"><canvas id="chart-opex-bar"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">OPEX Category Distribution</div>
-                <div class="chart-container"><canvas id="chart-opex-doughnut"></canvas></div>
-            </div>
+        <div class="section-header"><span class="icon" style="background:rgba(245,158,11,0.15);color:#f59e0b">💰</span>Provozní rozpočet (OPEX)</div>
+        <div class="grid-4 mb-18" id="opex-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">OPEX dle kategorie – Plán vs Skutečnost</div><div class="chart-container"><canvas id="c-opex-bar"></canvas></div></div>
+            <div class="card"><div class="card-title">Rozložení OPEX kategorií</div><div class="chart-container"><canvas id="c-opex-doughnut"></canvas></div></div>
         </div>
-        <div class="card">
-            <div class="card-title">Monthly OPEX Trend – Top 3 Categories</div>
-            <div class="chart-container"><canvas id="chart-opex-monthly"></canvas></div>
-        </div>
+        <div class="card"><div class="card-title">Měsíční trend OPEX – skutečnost</div><div class="chart-container"><canvas id="c-opex-monthly"></canvas></div></div>
     </section>
 
-    <!-- ──── CAPEX ──── -->
+    <!-- CAPEX -->
     <section class="tab-panel" id="panel-capex">
-        <div class="section-header"><span class="icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">🏗️</span>Capital Expenditure Budget</div>
-        <div class="grid-3 mb-24" id="capex-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">Investment vs Depreciation by Asset Type</div>
-                <div class="chart-container"><canvas id="chart-capex-bar"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Net Book Value Composition</div>
-                <div class="chart-container"><canvas id="chart-capex-doughnut"></canvas></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title">Quarterly Investment & Depreciation Trend</div>
-            <div class="chart-container"><canvas id="chart-capex-quarterly"></canvas></div>
+        <div class="section-header"><span class="icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">🏗️</span>Investiční rozpočet (CAPEX)</div>
+        <div class="grid-3 mb-18" id="capex-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">Investice vs Odpisy dle typu majetku</div><div class="chart-container"><canvas id="c-capex-bar"></canvas></div></div>
+            <div class="card"><div class="card-title">Měsíční investice</div><div class="chart-container"><canvas id="c-capex-monthly"></canvas></div></div>
         </div>
     </section>
 
-    <!-- ──── HR ──── -->
+    <!-- HR -->
     <section class="tab-panel" id="panel-hr">
-        <div class="section-header"><span class="icon" style="background:rgba(168,85,247,0.15);color:#a855f7">👥</span>HR / Workforce Budget</div>
-        <div class="grid-4 mb-24" id="hr-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">FTE & Total Employer Cost (Monthly 2025)</div>
-                <div class="chart-container"><canvas id="chart-hr-fte-cost"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Contract Type Mix</div>
-                <div class="chart-container"><canvas id="chart-hr-contracts"></canvas></div>
-            </div>
+        <div class="section-header"><span class="icon" style="background:rgba(168,85,247,0.15);color:#a855f7">👥</span>Mzdový plán (HR Budget)</div>
+        <div class="grid-4 mb-18" id="hr-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">FTE & Celkové náklady zaměstnavatele</div><div class="chart-container"><canvas id="c-hr-fte"></canvas></div></div>
+            <div class="card"><div class="card-title">Průměrná hrubá mzda & podíl bonusů</div><div class="chart-container"><canvas id="c-hr-salary"></canvas></div></div>
         </div>
-        <div class="grid-2">
-            <div class="card">
-                <div class="card-title">Average Salary & Bonus Ratio</div>
-                <div class="chart-container"><canvas id="chart-hr-salary"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">YoY Cost Growth (%)</div>
-                <div class="chart-container"><canvas id="chart-hr-yoy"></canvas></div>
-            </div>
-        </div>
+        <div class="card"><div class="card-title">Struktura úvazků</div><div class="chart-container"><canvas id="c-hr-contracts"></canvas></div></div>
     </section>
 
-    <!-- ──── SALES ──── -->
+    <!-- SALES -->
     <section class="tab-panel" id="panel-sales">
-        <div class="section-header"><span class="icon" style="background:rgba(16,185,129,0.15);color:#10b981">🛒</span>Sales Forecast</div>
-        <div class="grid-4 mb-24" id="sales-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">Revenue – Actual vs Forecast (2025)</div>
-                <div class="chart-container"><canvas id="chart-sales-trend"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Revenue by Product Category (000 CZK)</div>
-                <div class="chart-container"><canvas id="chart-sales-category"></canvas></div>
-            </div>
+        <div class="section-header"><span class="icon" style="background:rgba(16,185,129,0.15);color:#10b981">🛒</span>Předpověď prodejů (Sales Forecast)</div>
+        <div class="grid-4 mb-18" id="sales-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">Tržby – měsíční trend</div><div class="chart-container"><canvas id="c-sales-trend"></canvas></div></div>
+            <div class="card"><div class="card-title">Tržby dle kategorie produktu</div><div class="chart-container"><canvas id="c-sales-cat"></canvas></div></div>
         </div>
         <div class="grid-2">
-            <div class="card">
-                <div class="card-title">Revenue by Region (000 CZK)</div>
-                <div class="chart-container"><canvas id="chart-sales-region"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Revenue by Channel (000 CZK)</div>
-                <div class="chart-container"><canvas id="chart-sales-channel"></canvas></div>
-            </div>
+            <div class="card"><div class="card-title">Tržby dle regionu</div><div class="chart-container"><canvas id="c-sales-region"></canvas></div></div>
+            <div class="card"><div class="card-title">Tržby dle kanálu</div><div class="chart-container"><canvas id="c-sales-channel"></canvas></div></div>
         </div>
     </section>
 
-    <!-- ──── VARIANCE ──── -->
+    <!-- VARIANCE -->
     <section class="tab-panel" id="panel-variance">
-        <div class="section-header"><span class="icon" style="background:rgba(244,63,94,0.15);color:#f43f5e">📊</span>Variance Analysis</div>
-        <div class="grid-4 mb-24" id="variance-hero-cards"></div>
-        <div class="grid-2 mb-20">
-            <div class="card">
-                <div class="card-title">Variance Decomposition by Product Category</div>
-                <div class="chart-container"><canvas id="chart-variance-decomp"></canvas></div>
-            </div>
-            <div class="card">
-                <div class="card-title">Monthly Plan vs Actual Revenue</div>
-                <div class="chart-container"><canvas id="chart-variance-monthly"></canvas></div>
-            </div>
+        <div class="section-header"><span class="icon" style="background:rgba(244,63,94,0.15);color:#f43f5e">📊</span>Analýza odchylek (Variance Analysis)</div>
+        <div class="grid-4 mb-18" id="var-heroes"></div>
+        <div class="grid-2 mb-18">
+            <div class="card"><div class="card-title">Dekompozice odchylek dle kategorie</div><div class="chart-container"><canvas id="c-var-decomp"></canvas></div></div>
+            <div class="card"><div class="card-title">Měsíční plán vs skutečnost</div><div class="chart-container"><canvas id="c-var-monthly"></canvas></div></div>
         </div>
-        <div class="card">
-            <div class="card-title">Variance Detail Table</div>
-            <div style="overflow-x:auto">
-                <table class="data-table" id="variance-table"></table>
-            </div>
-        </div>
+        <div class="card"><div class="card-title">Detail odchylek</div><div style="overflow-x:auto"><table class="data-table" id="var-table"></table></div></div>
     </section>
-
 </main>
 
 <script src="data.js"></script>
@@ -552,54 +243,55 @@
 // ═══════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════
-const fmt = (n,d=0) => {
-    if(Math.abs(n)>=1e6) return (n/1e6).toFixed(1)+'M';
-    if(Math.abs(n)>=1e3) return (n/1e3).toFixed(d)+'K';
-    return n.toFixed(d);
+const D = FINANCIAL_DATA;
+const CZK = new Intl.NumberFormat('cs-CZ', { style:'currency', currency:'CZK', minimumFractionDigits:0, maximumFractionDigits:0 });
+const CZKshort = (n) => {
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '−' : '';
+    if (abs >= 1e9) return sign + (abs/1e9).toFixed(1).replace('.',',') + ' mld. Kč';
+    if (abs >= 1e6) return sign + (abs/1e6).toFixed(1).replace('.',',') + ' mil. Kč';
+    if (abs >= 1e3) return sign + (abs/1e3).toFixed(0) + ' tis. Kč';
+    return CZK.format(n);
 };
-const fmtCZK = n => fmt(n) + ' CZK';
-const pct = n => n.toFixed(1) + '%';
+const pct = n => n.toFixed(1).replace('.',',') + ' %';
+const fmtPeriod = p => { const [y,m] = p.split('-'); const mNames=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro']; return mNames[parseInt(m)-1]+' '+y; };
+const fmtPeriodShort = p => { const [y,m] = p.split('-'); const mNames=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro']; return mNames[parseInt(m)-1]+" '"+y.slice(2); };
 
 function heroCard(label, value, sub, glowClass='glow-indigo') {
-    return `<div class="hero-card">
-        <div class="glow ${glowClass}"></div>
-        <div class="label">${label}</div>
-        <div class="value">${value}</div>
-        <div class="sub">${sub}</div>
-    </div>`;
+    return `<div class="hero-card"><div class="glow ${glowClass}"></div><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`;
 }
 
-const chartColors = {
-    indigo: '#6366f1', violet: '#8b5cf6', blue: '#3b82f6',
-    green: '#10b981', amber: '#f59e0b', rose: '#f43f5e',
-    cyan: '#06b6d4', pink: '#ec4899',teal:'#14b8a6',orange:'#f97316'
-};
-const alphaColor = (hex, a) => {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
-    return `rgba(${r},${g},${b},${a})`;
-};
+const COLORS = { indigo:'#6366f1', violet:'#8b5cf6', blue:'#3b82f6', green:'#10b981', amber:'#f59e0b', rose:'#f43f5e', cyan:'#06b6d4', pink:'#ec4899', teal:'#14b8a6', orange:'#f97316' };
+const COLOR_ARR = Object.values(COLORS);
+const alphaC = (hex,a) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
+const baseOpts = () => ({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:14,usePointStyle:true,pointStyleWidth:8}}, tooltip:{backgroundColor:'rgba(17,24,39,0.95)',titleColor:'#f9fafb',bodyColor:'#d1d5db',borderColor:'rgba(75,85,99,0.3)',borderWidth:1,padding:10,cornerRadius:8,titleFont:{weight:'600',family:'Inter'},bodyFont:{family:'Inter'},callbacks:{label:ctx=>{const v=ctx.parsed.y??ctx.parsed; return ctx.dataset.label+': '+CZK.format(Math.round(v))}}} },
+    scales:{ x:{ticks:{color:'#6b7280',font:{size:10,family:'Inter'}},grid:{color:'rgba(75,85,99,0.12)'}}, y:{ticks:{color:'#6b7280',font:{size:10,family:'Inter'},callback:v=>CZKshort(v)},grid:{color:'rgba(75,85,99,0.12)'}} }
+});
 
-const defaultOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: { labels: { color: '#9ca3af', font: { size: 11, family: 'Inter' }, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
-        tooltip: { backgroundColor: 'rgba(17,24,39,0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(75,85,99,0.3)', borderWidth: 1, padding: 12, cornerRadius: 8, titleFont: { weight: '600', family:'Inter' }, bodyFont: { family:'Inter' } }
-    },
-    scales: {
-        x: { ticks: { color: '#6b7280', font: {size:11,family:'Inter'} }, grid: { color: 'rgba(75,85,99,0.15)' } },
-        y: { ticks: { color: '#6b7280', font: {size:11,family:'Inter'} }, grid: { color: 'rgba(75,85,99,0.15)' } }
-    }
-};
-function mergeOpts(custom) {
-    return JSON.parse(JSON.stringify({...defaultOpts, ...custom}));
+// ═══════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════
+const elYear = document.getElementById('filter-year');
+const elRegion = document.getElementById('filter-region');
+const elCC = document.getElementById('filter-cc');
+const elCat = document.getElementById('filter-category');
+
+D.filters.years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; elYear.appendChild(o); });
+D.filters.regions.forEach(r => { const o=document.createElement('option'); o.value=r; o.textContent=r; elRegion.appendChild(o); });
+D.filters.cost_centers.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.id+' – '+c.name; elCC.appendChild(o); });
+D.filters.categories.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; elCat.appendChild(o); });
+
+function getFilters() {
+    return { year: elYear.value, region: elRegion.value, cc: elCC.value, category: elCat.value };
 }
+function matchYear(period, y) { return y==='all' || period.startsWith(y); }
+function matchRegion(row, r) { return r==='all' || row.region === r; }
+function matchCC(row, c) { return c==='all' || row.cost_center_id === c; }
+function matchCat(row, c) { return c==='all' || row.product_category === c; }
 
-// ═══════════════════════════════════════════
-// TAB SWITCHING
-// ═══════════════════════════════════════════
+// Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -609,352 +301,302 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+// Chart registry for destruction
+const charts = {};
+function makeChart(id, cfg) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), cfg);
+}
+
 // ═══════════════════════════════════════════
-// 1. KPIs TAB
+// RENDER ALL
 // ═══════════════════════════════════════════
-(function renderKPIs() {
-    const S = SUMMARY;
-    const K = DATA_KPIS;
-    document.getElementById('kpi-hero-cards').innerHTML = [
-        heroCard('Revenue 2025', fmtCZK(S.total_revenue_2025), `<span class="up">▲ ${S.revenue_growth_pct}%</span> vs 2024`, 'glow-green'),
-        heroCard('EBITDA', fmtCZK(S.ebitda_2025), `Margin: ${S.ebitda_margin_2025}%`, 'glow-indigo'),
-        heroCard('Gross Margin', pct(S.gross_margin_2025), 'Revenue − COGS', 'glow-violet'),
-        heroCard('Avg DSO', S.avg_dso_2025+' days', 'Days Sales Outstanding', 'glow-blue'),
-        heroCard('Avg DPO', S.avg_dpo_2025+' days', 'Days Payables Outstanding', 'glow-amber'),
-        heroCard('FTE', S.total_fte_2025.toString(), 'Active employees', 'glow-rose'),
+function renderAll() {
+    const f = getFilters();
+    renderKPIs(f);
+    renderOPEX(f);
+    renderCAPEX(f);
+    renderHR(f);
+    renderSales(f);
+    renderVariance(f);
+}
+
+// ── 1. KPIs ──
+function renderKPIs(f) {
+    const data = D.kpis.filter(r => matchYear(r.period, f.year));
+    if (!data.length) { document.getElementById('kpi-heroes').innerHTML='<p style="color:var(--text-muted)">Žádná data pro zvolený filtr</p>'; return; }
+
+    const totalRev = data.reduce((s,r)=>s+r.revenue,0);
+    const totalEbitda = data.reduce((s,r)=>s+r.ebitda,0);
+    const avgGM = data.reduce((s,r)=>s+r.gross_margin_pct,0)/data.length;
+    const avgEM = data.reduce((s,r)=>s+r.ebitda_margin_pct,0)/data.length;
+    const avgDSO = data.reduce((s,r)=>s+r.dso_days,0)/data.length;
+    const avgDPO = data.reduce((s,r)=>s+r.dpo_days,0)/data.length;
+
+    document.getElementById('kpi-heroes').innerHTML = [
+        heroCard('Celkové tržby', CZKshort(totalRev), f.year==='all'?'Celé období':'Rok '+f.year, 'glow-green'),
+        heroCard('EBITDA', CZKshort(totalEbitda), 'Provozní zisk před odpisy', 'glow-indigo'),
+        heroCard('EBITDA marže', pct(avgEM), 'Průměr za období', 'glow-violet'),
+        heroCard('Hrubá marže', pct(avgGM), 'Tržby − COGS / Tržby', 'glow-blue'),
+        heroCard('Průměr DSO', Math.round(avgDSO)+' dní', 'Doba splatnosti pohledávek', 'glow-amber'),
+        heroCard('Průměr DPO', Math.round(avgDPO)+' dní', 'Doba splatnosti závazků', 'glow-rose'),
     ].join('');
 
-    const last12 = K.periods.slice(-12);
-    const last12Labels = last12.map(p => p.slice(5));
+    const labels = data.map(r=>fmtPeriodShort(r.period));
+    makeChart('c-kpi-ebitda', { type:'bar', data:{ labels, datasets:[
+        {label:'Tržby',data:data.map(r=>r.revenue),backgroundColor:alphaC(COLORS.indigo,0.5),borderColor:COLORS.indigo,borderWidth:1,borderRadius:3,order:2},
+        {label:'EBITDA',data:data.map(r=>r.ebitda),type:'line',borderColor:COLORS.green,backgroundColor:alphaC(COLORS.green,0.1),pointRadius:2,tension:0.3,fill:true,order:1}
+    ]}, options:baseOpts()});
 
-    new Chart(document.getElementById('chart-kpi-ebitda'), {
-        type: 'bar',
-        data: {
-            labels: last12Labels,
-            datasets: [
-                { label: 'Revenue (M CZK)', data: K.total_revenue.slice(-12).map(v=>v/1e6), backgroundColor: alphaColor(chartColors.indigo,0.6), borderColor: chartColors.indigo, borderWidth: 1, borderRadius: 4, order: 2 },
-                { label: 'EBITDA (M CZK)', data: K.ebitda.slice(-12).map(v=>v/1e6), type:'line', borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), pointRadius: 3, tension: 0.3, fill: true, order: 1 }
-            ]
-        },
-        options: mergeOpts({})
+    makeChart('c-kpi-margins', {type:'line',data:{labels,datasets:[
+        {label:'EBITDA marže %',data:data.map(r=>r.ebitda_margin_pct),borderColor:COLORS.indigo,tension:0.3},
+        {label:'Hrubá marže %',data:data.map(r=>r.gross_margin_pct),borderColor:COLORS.green,tension:0.3},
+        {label:'ROA %',data:data.map(r=>r.roa_pct),borderColor:COLORS.amber,tension:0.3},
+    ]},options:{...baseOpts(),scales:{...baseOpts().scales,y:{ticks:{color:'#6b7280',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(75,85,99,0.12)'}}}}});
+
+    makeChart('c-kpi-dso', {type:'line',data:{labels,datasets:[
+        {label:'DSO (dny)',data:data.map(r=>r.dso_days),borderColor:COLORS.blue,backgroundColor:alphaC(COLORS.blue,0.1),tension:0.3,fill:true},
+        {label:'DPO (dny)',data:data.map(r=>r.dpo_days),borderColor:COLORS.amber,backgroundColor:alphaC(COLORS.amber,0.1),tension:0.3,fill:true},
+    ]},options:{...baseOpts(),scales:{...baseOpts().scales,y:{ticks:{color:'#6b7280',font:{size:10},callback:v=>v+' dní'},grid:{color:'rgba(75,85,99,0.12)'}}}}});
+
+    makeChart('c-kpi-cf', {type:'bar',data:{labels,datasets:[
+        {label:'Burn Rate',data:data.map(r=>r.burn_rate),backgroundColor:alphaC(COLORS.rose,0.4),borderRadius:3},
+        {label:'Čistý Cash Flow',data:data.map(r=>r.net_cashflow),type:'line',borderColor:COLORS.green,pointRadius:2,tension:0.3}
+    ]},options:baseOpts()});
+}
+
+// ── 2. OPEX ──
+function renderOPEX(f) {
+    const rows = D.opex.filter(r => matchYear(r.period,f.year) && matchRegion(r,f.region) && matchCC(r,f.cc));
+    // Aggregate by category
+    const byCat = {};
+    const byPeriodCat = {};
+    rows.forEach(r => {
+        if (!byCat[r.category]) byCat[r.category] = {planned:0, actual:0};
+        byCat[r.category].planned += r.planned;
+        byCat[r.category].actual += r.actual;
+        const pk = r.period+'|'+r.category;
+        if (!byPeriodCat[r.period]) byPeriodCat[r.period] = {};
+        if (!byPeriodCat[r.period][r.category]) byPeriodCat[r.period][r.category] = 0;
+        byPeriodCat[r.period][r.category] += r.actual;
     });
 
-    new Chart(document.getElementById('chart-kpi-margins'), {
-        type: 'line',
-        data: {
-            labels: last12Labels,
-            datasets: [
-                { label: 'EBITDA Margin %', data: K.ebitda_margin_pct.slice(-12), borderColor: chartColors.indigo, backgroundColor: alphaColor(chartColors.indigo,0.1), tension: 0.3, fill: true },
-                { label: 'ROA %', data: K.roa_pct.slice(-12), borderColor: chartColors.amber, tension: 0.3 },
-                { label: 'ROE %', data: K.roe_pct.slice(-12), borderColor: chartColors.rose, tension: 0.3 }
-            ]
-        },
-        options: mergeOpts({})
-    });
+    const cats = Object.keys(byCat).sort();
+    const totalPlan = Object.values(byCat).reduce((s,c)=>s+c.planned,0);
+    const totalAct = Object.values(byCat).reduce((s,c)=>s+c.actual,0);
+    const totalVar = totalAct - totalPlan;
+    const biggest = cats.reduce((a,c)=>byCat[c].actual>byCat[a].actual?c:a, cats[0]||'');
 
-    new Chart(document.getElementById('chart-kpi-dso-dpo'), {
-        type: 'line',
-        data: {
-            labels: last12Labels,
-            datasets: [
-                { label: 'DSO (days)', data: K.dso_days.slice(-12), borderColor: chartColors.blue, backgroundColor: alphaColor(chartColors.blue,0.1), tension: 0.3, fill: true },
-                { label: 'DPO (days)', data: K.dpo_days.slice(-12), borderColor: chartColors.amber, backgroundColor: alphaColor(chartColors.amber,0.1), tension: 0.3, fill: true }
-            ]
-        },
-        options: mergeOpts({})
-    });
-
-    new Chart(document.getElementById('chart-kpi-cashflow'), {
-        type: 'bar',
-        data: {
-            labels: last12Labels,
-            datasets: [
-                { label: 'Burn Rate (M)', data: K.burn_rate.slice(-12).map(v=>v/1e6), backgroundColor: alphaColor(chartColors.rose,0.5), borderColor: chartColors.rose, borderWidth:1, borderRadius: 4 },
-                { label: 'Net Cash Flow (M)', data: K.net_cashflow.slice(-12).map(v=>v/1e6), type:'line', borderColor: chartColors.green, pointRadius: 3, tension: 0.3 }
-            ]
-        },
-        options: mergeOpts({})
-    });
-})();
-
-// ═══════════════════════════════════════════
-// 2. OPEX TAB
-// ═══════════════════════════════════════════
-(function renderOPEX() {
-    const O = DATA_OPEX;
-    const totalPlan = O.planned.reduce((a,b)=>a+b,0);
-    const totalActual = O.actual.reduce((a,b)=>a+b,0);
-    const totalVar = totalActual - totalPlan;
-    const varPct = (totalVar/totalPlan*100);
-
-    document.getElementById('opex-hero-cards').innerHTML = [
-        heroCard('Total OPEX Plan', fmtCZK(totalPlan), 'Annual budget', 'glow-amber'),
-        heroCard('Total OPEX Actual', fmtCZK(totalActual), `${varPct>0?'▲':'▼'} ${Math.abs(varPct).toFixed(1)}% vs plan`, 'glow-indigo'),
-        heroCard('Largest Category', 'Personnel', fmt(O.actual[2])+' CZK', 'glow-violet'),
-        heroCard('Biggest Overrun', 'Energy', `+${fmt(O.actual[1]-O.planned[1])} CZK`, 'glow-rose'),
+    document.getElementById('opex-heroes').innerHTML = [
+        heroCard('Plán OPEX celkem', CZKshort(totalPlan), 'Roční rozpočet', 'glow-amber'),
+        heroCard('Skutečnost OPEX', CZKshort(totalAct), `${totalVar>=0?'▲':'▼'} ${pct(totalPlan?totalVar/totalPlan*100:0)} vs plán`, 'glow-indigo'),
+        heroCard('Největší kategorie', biggest, CZKshort(byCat[biggest]?.actual||0), 'glow-violet'),
+        heroCard('Celková odchylka', CZKshort(totalVar), totalVar>0?'<span class="down">Přečerpáno</span>':'<span class="up">Úspora</span>', 'glow-rose'),
     ].join('');
 
-    new Chart(document.getElementById('chart-opex-bar'), {
-        type: 'bar',
-        data: {
-            labels: O.categories,
-            datasets: [
-                { label: 'Planned', data: O.planned.map(v=>v/1e3), backgroundColor: alphaColor(chartColors.blue,0.5), borderColor: chartColors.blue, borderWidth:1, borderRadius: 4 },
-                { label: 'Actual', data: O.actual.map(v=>v/1e3), backgroundColor: alphaColor(chartColors.indigo,0.7), borderColor: chartColors.indigo, borderWidth:1, borderRadius: 4 }
-            ]
-        },
-        options: mergeOpts({ indexAxis: 'y', plugins: { legend: { position: 'top' } } })
+    makeChart('c-opex-bar', {type:'bar', data:{labels:cats, datasets:[
+        {label:'Plán',data:cats.map(c=>byCat[c].planned),backgroundColor:alphaC(COLORS.blue,0.45),borderRadius:3},
+        {label:'Skutečnost',data:cats.map(c=>byCat[c].actual),backgroundColor:alphaC(COLORS.indigo,0.65),borderRadius:3}
+    ]}, options:{...baseOpts(),indexAxis:'y'}});
+
+    makeChart('c-opex-doughnut', {type:'doughnut', data:{labels:cats, datasets:[{data:cats.map(c=>byCat[c].actual),backgroundColor:COLOR_ARR.slice(0,cats.length),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:10,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+CZK.format(Math.round(ctx.parsed))}}}}});
+
+    const periods = Object.keys(byPeriodCat).sort();
+    const topCats = cats.slice(0,4);
+    makeChart('c-opex-monthly', {type:'line', data:{labels:periods.map(fmtPeriodShort), datasets:topCats.map((c,i)=>({
+        label:c, data:periods.map(p=>(byPeriodCat[p]||{})[c]||0), borderColor:COLOR_ARR[i], tension:0.3
+    }))}, options:baseOpts()});
+}
+
+// ── 3. CAPEX ──
+function renderCAPEX(f) {
+    const rows = D.capex.filter(r => matchYear(r.period,f.year) && matchRegion(r,f.region) && matchCC(r,f.cc));
+    const byCat = {};
+    const byPeriod = {};
+    rows.forEach(r => {
+        const cat = r.asset_category;
+        if (!byCat[cat]) byCat[cat]={investment:0,depreciation:0};
+        byCat[cat].investment += r.investment;
+        byCat[cat].depreciation += r.depreciation;
+        if (!byPeriod[r.period]) byPeriod[r.period]={inv:0,depr:0};
+        byPeriod[r.period].inv += r.investment;
+        byPeriod[r.period].depr += r.depreciation;
     });
 
-    new Chart(document.getElementById('chart-opex-doughnut'), {
-        type: 'doughnut',
-        data: {
-            labels: O.categories,
-            datasets: [{ data: O.actual, backgroundColor: [chartColors.indigo,chartColors.amber,chartColors.violet,chartColors.rose,chartColors.blue,chartColors.teal], borderWidth: 0 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
-    });
+    const cats = Object.keys(byCat).filter(c=>c!=='Odpisy'&&c!=='Oprávky').sort();
+    const totalInv = cats.reduce((s,c)=>s+byCat[c].investment,0);
+    const totalDepr = (byCat['Odpisy']||{depreciation:0}).depreciation;
 
-    new Chart(document.getElementById('chart-opex-monthly'), {
-        type: 'line',
-        data: {
-            labels: MONTHS_SHORT,
-            datasets: [
-                { label: 'Energy & Materials (K)', data: O.monthly_actual[1], borderColor: chartColors.amber, tension:0.3 },
-                { label: 'Personnel (K)', data: O.monthly_actual[2], borderColor: chartColors.violet, tension:0.3 },
-                { label: 'Rent & Services (K)', data: O.monthly_actual[0], borderColor: chartColors.indigo, tension:0.3 }
-            ]
-        },
-        options: mergeOpts({})
-    });
-})();
-
-// ═══════════════════════════════════════════
-// 3. CAPEX TAB
-// ═══════════════════════════════════════════
-(function renderCAPEX() {
-    const C = DATA_CAPEX;
-    const totalInv = C.investment.reduce((a,b)=>a+b,0);
-    const totalDepr = C.depreciation.reduce((a,b)=>a+b,0);
-    const totalNBV = C.net_book_value.reduce((a,b)=>a+b,0);
-
-    document.getElementById('capex-hero-cards').innerHTML = [
-        heroCard('Total Investment', fmtCZK(totalInv), 'FY 2025', 'glow-blue'),
-        heroCard('Total Depreciation', fmtCZK(totalDepr), 'Annual charge', 'glow-amber'),
-        heroCard('Net Book Value', fmtCZK(totalNBV), 'Investment − Depreciation', 'glow-green'),
+    document.getElementById('capex-heroes').innerHTML = [
+        heroCard('Celkové investice', CZKshort(totalInv), 'Do dlouhodobého majetku', 'glow-blue'),
+        heroCard('Celkové odpisy', CZKshort(totalDepr), 'Náklady na odpisy', 'glow-amber'),
+        heroCard('Čistá hodnota', CZKshort(totalInv-totalDepr), 'Investice − odpisy', 'glow-green'),
     ].join('');
 
-    new Chart(document.getElementById('chart-capex-bar'), {
-        type: 'bar',
-        data: {
-            labels: C.categories,
-            datasets: [
-                { label: 'Investment (M)', data: C.investment.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.blue,0.6), borderRadius:4, borderColor:chartColors.blue, borderWidth:1 },
-                { label: 'Depreciation (M)', data: C.depreciation.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.amber,0.6), borderRadius:4, borderColor:chartColors.amber, borderWidth:1 },
-            ]
-        },
-        options: mergeOpts({})
+    makeChart('c-capex-bar', {type:'bar', data:{labels:cats, datasets:[
+        {label:'Investice',data:cats.map(c=>byCat[c].investment),backgroundColor:alphaC(COLORS.blue,0.55),borderRadius:3},
+        {label:'Odpisy',data:cats.map(c=>byCat[c].depreciation),backgroundColor:alphaC(COLORS.amber,0.55),borderRadius:3},
+    ]}, options:baseOpts()});
+
+    const periods = Object.keys(byPeriod).sort();
+    makeChart('c-capex-monthly', {type:'bar', data:{labels:periods.map(fmtPeriodShort), datasets:[
+        {label:'Investice',data:periods.map(p=>byPeriod[p].inv),backgroundColor:alphaC(COLORS.blue,0.5),borderRadius:2},
+        {label:'Odpisy',data:periods.map(p=>byPeriod[p].depr),type:'line',borderColor:COLORS.amber,tension:0.3,pointRadius:2}
+    ]}, options:baseOpts()});
+}
+
+// ── 4. HR ──
+function renderHR(f) {
+    const rows = D.hr.filter(r => matchYear(r.period,f.year) && matchRegion(r,f.region) && matchCC(r,f.cc));
+    // Aggregate by period
+    const byPeriod = {};
+    let totalFT=0, totalPT=0, totalDPP=0;
+    rows.forEach(r => {
+        if (!byPeriod[r.period]) byPeriod[r.period]={hc:0,fte:0,cost:0,gross:0,bonuses:0,count:0};
+        byPeriod[r.period].hc += r.headcount;
+        byPeriod[r.period].fte += r.effective_fte;
+        byPeriod[r.period].cost += r.employer_cost;
+        byPeriod[r.period].gross += r.gross_total;
+        byPeriod[r.period].bonuses += r.bonuses;
+        byPeriod[r.period].count++;
+        totalFT+=r.fte_full_time; totalPT+=r.fte_part_time; totalDPP+=r.fte_contractors;
     });
 
-    new Chart(document.getElementById('chart-capex-doughnut'), {
-        type: 'doughnut',
-        data: {
-            labels: C.categories,
-            datasets: [{ data: C.net_book_value, backgroundColor: [chartColors.blue,chartColors.violet,chartColors.teal], borderWidth:0 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
-    });
+    const periods = Object.keys(byPeriod).sort();
+    const lastP = periods[periods.length-1];
+    const last = byPeriod[lastP] || {hc:0,fte:0,cost:0};
+    const totalCost = Object.values(byPeriod).reduce((s,p)=>s+p.cost,0);
 
-    const quarters = ['Q1','Q2','Q3','Q4'];
-    new Chart(document.getElementById('chart-capex-quarterly'), {
-        type: 'bar',
-        data: {
-            labels: quarters,
-            datasets: [
-                { label: 'Tangible Inv. (K)', data: C.quarterly_investment[0], backgroundColor: alphaColor(chartColors.blue,0.5), borderRadius:4 },
-                { label: 'Intangible Inv. (K)', data: C.quarterly_investment[1], backgroundColor: alphaColor(chartColors.violet,0.5), borderRadius:4 },
-                { label: 'Tangible Depr. (K)', data: C.quarterly_depreciation[0], type:'line', borderColor:chartColors.amber, tension:0.3, pointRadius:4 },
-                { label: 'Intangible Depr. (K)', data: C.quarterly_depreciation[1], type:'line', borderColor:chartColors.rose, tension:0.3, pointRadius:4 }
-            ]
-        },
-        options: mergeOpts({})
-    });
-})();
-
-// ═══════════════════════════════════════════
-// 4. HR TAB
-// ═══════════════════════════════════════════
-(function renderHR() {
-    const H = DATA_HR;
-    const lastHC = H.headcount[H.headcount.length-1];
-    const lastFTE = H.effective_fte[H.effective_fte.length-1];
-    const lastAvg = H.avg_gross_salary[H.avg_gross_salary.length-1];
-
-    document.getElementById('hr-hero-cards').innerHTML = [
-        heroCard('Headcount', lastHC.toString(), 'Dec 2025', 'glow-violet'),
-        heroCard('Effective FTE', lastFTE.toString(), 'Full-time equivalent', 'glow-indigo'),
-        heroCard('Avg Gross Salary', fmt(lastAvg)+' CZK', 'Monthly average', 'glow-green'),
-        heroCard('YoY Cost Growth', pct(H.yoy_cost_growth_pct[H.yoy_cost_growth_pct.length-1]), 'Dec 2025 vs Dec 2024', 'glow-amber'),
+    document.getElementById('hr-heroes').innerHTML = [
+        heroCard('Počet zaměstnanců', last.hc.toString(), lastP?fmtPeriod(lastP):'', 'glow-violet'),
+        heroCard('Efektivní FTE', last.fte.toFixed(1), 'Přepočtený úvazek', 'glow-indigo'),
+        heroCard('Celkové náklady', CZKshort(totalCost), 'Za zvolené období', 'glow-green'),
+        heroCard('Prům. hrubá mzda', last.hc? CZKshort(last.gross/last.hc) : '0 Kč', 'Poslední měsíc', 'glow-amber'),
     ].join('');
 
-    new Chart(document.getElementById('chart-hr-fte-cost'), {
-        type: 'bar',
-        data: {
-            labels: H.months,
-            datasets: [
-                { label: 'Total Employer Cost (K)', data: H.total_employer_cost, backgroundColor: alphaColor(chartColors.indigo,0.6), borderRadius:4, borderColor:chartColors.indigo, borderWidth:1, yAxisID:'y' },
-                { label: 'Effective FTE', data: H.effective_fte, type:'line', borderColor:chartColors.green, tension:0.3, pointRadius:3, yAxisID:'y1' }
-            ]
-        },
-        options: mergeOpts({ scales: { y: { position:'left', ticks:{color:'#6b7280',font:{size:11}}, grid:{color:'rgba(75,85,99,0.15)'} }, y1: { position:'right', ticks:{color:'#10b981',font:{size:11}}, grid:{drawOnChartArea:false} } } })
+    makeChart('c-hr-fte', {type:'bar', data:{labels:periods.map(fmtPeriodShort), datasets:[
+        {label:'Náklady zaměstnavatele',data:periods.map(p=>byPeriod[p].cost),backgroundColor:alphaC(COLORS.indigo,0.5),borderRadius:2,yAxisID:'y'},
+        {label:'Efektivní FTE',data:periods.map(p=>byPeriod[p].fte),type:'line',borderColor:COLORS.green,tension:0.3,pointRadius:2,yAxisID:'y1'}
+    ]}, options:{...baseOpts(),scales:{y:{position:'left',ticks:{color:'#6b7280',font:{size:10},callback:v=>CZKshort(v)},grid:{color:'rgba(75,85,99,0.12)'}},y1:{position:'right',ticks:{color:'#10b981',font:{size:10}},grid:{drawOnChartArea:false}},x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(75,85,99,0.12)'}}}}});
+
+    makeChart('c-hr-salary', {type:'line', data:{labels:periods.map(fmtPeriodShort), datasets:[
+        {label:'Prům. hrubá mzda',data:periods.map(p=>byPeriod[p].hc?byPeriod[p].gross/byPeriod[p].hc:0),borderColor:COLORS.indigo,tension:0.3,yAxisID:'y'},
+        {label:'Podíl bonusů (%)',data:periods.map(p=>byPeriod[p].gross?byPeriod[p].bonuses/byPeriod[p].gross*100:0),borderColor:COLORS.amber,tension:0.3,yAxisID:'y1'}
+    ]}, options:{...baseOpts(),scales:{y:{position:'left',ticks:{color:'#6b7280',font:{size:10},callback:v=>CZKshort(v)},grid:{color:'rgba(75,85,99,0.12)'}},y1:{position:'right',ticks:{color:'#f59e0b',font:{size:10},callback:v=>v.toFixed(0)+'%'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(75,85,99,0.12)'}}}}});
+
+    const nPeriods = periods.length || 1;
+    makeChart('c-hr-contracts', {type:'doughnut', data:{labels:['Plný úvazek','Částečný úvazek','DPP'], datasets:[{data:[totalFT/nPeriods,totalPT/nPeriods,totalDPP/nPeriods].map(Math.round),backgroundColor:[COLORS.indigo,COLORS.amber,COLORS.rose],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:10,usePointStyle:true}}}}});
+}
+
+// ── 5. SALES ──
+function renderSales(f) {
+    const rows = D.sales.filter(r => matchYear(r.period,f.year) && matchRegion(r,f.region) && matchCat(r,f.category));
+    const byPeriod = {};
+    const byCat = {};
+    const byRegion = {};
+    const byChannel = {};
+    let totalQty=0, totalRev=0, totalCogs=0;
+
+    rows.forEach(r => {
+        if (!byPeriod[r.period]) byPeriod[r.period]={rev:0,qty:0,cogs:0};
+        byPeriod[r.period].rev += r.revenue;
+        byPeriod[r.period].qty += r.quantity;
+        byPeriod[r.period].cogs += r.cogs;
+        byCat[r.product_category] = (byCat[r.product_category]||0) + r.revenue;
+        byRegion[r.region] = (byRegion[r.region]||0) + r.revenue;
+        byChannel[r.channel] = (byChannel[r.channel]||0) + r.revenue;
+        totalQty+=r.quantity; totalRev+=r.revenue; totalCogs+=r.cogs;
     });
 
-    new Chart(document.getElementById('chart-hr-contracts'), {
-        type: 'doughnut',
-        data: {
-            labels: H.contract_types.labels,
-            datasets: [{ data: H.contract_types.values, backgroundColor: [chartColors.indigo,chartColors.amber,chartColors.rose], borderWidth:0 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
-    });
-
-    new Chart(document.getElementById('chart-hr-salary'), {
-        type: 'line',
-        data: {
-            labels: H.months,
-            datasets: [
-                { label: 'Avg Salary (CZK)', data: H.avg_gross_salary, borderColor: chartColors.indigo, tension:0.3, fill:false, yAxisID:'y' },
-                { label: 'Bonus Ratio %', data: H.bonus_ratio_pct, borderColor: chartColors.amber, tension:0.3, fill:false, yAxisID:'y1' }
-            ]
-        },
-        options: mergeOpts({ scales: { y: { position:'left', ticks:{color:'#6b7280'}, grid:{color:'rgba(75,85,99,0.15)'} }, y1: { position:'right', ticks:{color:'#f59e0b'}, grid:{drawOnChartArea:false} } } })
-    });
-
-    new Chart(document.getElementById('chart-hr-yoy'), {
-        type: 'bar',
-        data: {
-            labels: H.months,
-            datasets: [{ label: 'YoY Cost Growth %', data: H.yoy_cost_growth_pct, backgroundColor: H.yoy_cost_growth_pct.map(v => v>5 ? alphaColor(chartColors.rose,0.6) : alphaColor(chartColors.green,0.6)), borderRadius:4, borderWidth:0 }]
-        },
-        options: mergeOpts({plugins:{legend:{display:false}}})
-    });
-})();
-
-// ═══════════════════════════════════════════
-// 5. SALES TAB
-// ═══════════════════════════════════════════
-(function renderSales() {
-    const S = DATA_SALES;
-    const totalRev = S.actual_revenue.reduce((a,b)=>a+b,0)*1000;
-    const totalForecast = S.forecast_revenue.reduce((a,b)=>a+b,0)*1000;
-    const revVsPlan = ((totalRev-totalForecast)/totalForecast*100);
-
-    document.getElementById('sales-hero-cards').innerHTML = [
-        heroCard('Revenue 2025', fmtCZK(totalRev), `<span class="${revVsPlan>0?'up':'down'}">${revVsPlan>0?'▲':'▼'} ${Math.abs(revVsPlan).toFixed(1)}%</span> vs forecast`, 'glow-green'),
-        heroCard('Forecast 2025', fmtCZK(totalForecast), '3M rolling average', 'glow-blue'),
-        heroCard('Total Units', fmt(S.actual_units.reduce((a,b)=>a+b,0)), 'Units sold 2025', 'glow-violet'),
-        heroCard('Top Category', 'Elektronika', fmt(S.by_category.revenue[0])+'K CZK', 'glow-amber'),
+    const gm = totalRev ? (totalRev-totalCogs)/totalRev*100 : 0;
+    document.getElementById('sales-heroes').innerHTML = [
+        heroCard('Celkové tržby', CZKshort(totalRev), f.year==='all'?'Celé období':'Rok '+f.year, 'glow-green'),
+        heroCard('Prodané kusy', totalQty.toLocaleString('cs-CZ'), 'Celkový objem', 'glow-blue'),
+        heroCard('Hrubá marže', pct(gm), 'Tržby − COGS / Tržby', 'glow-violet'),
+        heroCard('Prům. cena', totalQty?CZKshort(totalRev/totalQty):'0 Kč', 'Na jednotku', 'glow-amber'),
     ].join('');
 
-    new Chart(document.getElementById('chart-sales-trend'), {
-        type: 'line',
-        data: {
-            labels: S.months,
-            datasets: [
-                { label: 'Actual Revenue (K)', data: S.actual_revenue, borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), tension:0.3, fill:true, pointRadius:4 },
-                { label: 'Forecast Revenue (K)', data: S.forecast_revenue, borderColor: chartColors.blue, borderDash:[6,4], tension:0.3, pointRadius:3 },
-            ]
-        },
-        options: mergeOpts({})
+    const periods = Object.keys(byPeriod).sort();
+    makeChart('c-sales-trend', {type:'line', data:{labels:periods.map(fmtPeriodShort), datasets:[
+        {label:'Tržby',data:periods.map(p=>byPeriod[p].rev),borderColor:COLORS.green,backgroundColor:alphaC(COLORS.green,0.1),tension:0.3,fill:true,pointRadius:2},
+    ]}, options:baseOpts()});
+
+    const catKeys = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    makeChart('c-sales-cat', {type:'bar', data:{labels:catKeys, datasets:[{label:'Tržby',data:catKeys.map(c=>byCat[c]),backgroundColor:COLOR_ARR.slice(0,catKeys.length),borderRadius:3}]},
+        options:{...baseOpts(),indexAxis:'y',plugins:{...baseOpts().plugins,legend:{display:false}}}});
+
+    const regKeys = Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    makeChart('c-sales-region', {type:'bar', data:{labels:regKeys, datasets:[{label:'Tržby',data:regKeys.map(r=>byRegion[r]),backgroundColor:alphaC(COLORS.indigo,0.55),borderRadius:3}]},
+        options:{...baseOpts(),plugins:{...baseOpts().plugins,legend:{display:false}}}});
+
+    const chKeys = Object.entries(byChannel).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    makeChart('c-sales-channel', {type:'doughnut', data:{labels:chKeys, datasets:[{data:chKeys.map(c=>byChannel[c]),backgroundColor:COLOR_ARR.slice(0,chKeys.length),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:10,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+CZK.format(Math.round(ctx.parsed))}}}}});
+}
+
+// ── 6. VARIANCE ──
+function renderVariance(f) {
+    const rows = D.variance.filter(r => matchYear(r.period,f.year) && matchCat(r,f.category));
+    const byCat = {};
+    const byPeriod = {};
+    rows.forEach(r => {
+        if (!byCat[r.product_category]) byCat[r.product_category]={vol:0,price:0,cost:0,total:0};
+        byCat[r.product_category].vol += r.volume_variance;
+        byCat[r.product_category].price += r.price_variance;
+        byCat[r.product_category].cost += r.cost_variance;
+        byCat[r.product_category].total += r.total_variance;
+        if (!byPeriod[r.period]) byPeriod[r.period]={plan:0,actual:0};
+        byPeriod[r.period].plan += r.plan_revenue;
+        byPeriod[r.period].actual += r.actual_revenue;
     });
 
-    new Chart(document.getElementById('chart-sales-category'), {
-        type: 'bar',
-        data: {
-            labels: S.by_category.labels,
-            datasets: [{ label: 'Revenue (K CZK)', data: S.by_category.revenue, backgroundColor: [chartColors.indigo,chartColors.blue,chartColors.violet,chartColors.green,chartColors.amber,chartColors.rose,chartColors.cyan,chartColors.teal,chartColors.orange,chartColors.pink], borderRadius:4, borderWidth:0 }]
-        },
-        options: mergeOpts({ indexAxis:'y', plugins:{legend:{display:false}} })
-    });
+    const totalVol = Object.values(byCat).reduce((s,c)=>s+c.vol,0);
+    const totalPrice = Object.values(byCat).reduce((s,c)=>s+c.price,0);
+    const totalCost = Object.values(byCat).reduce((s,c)=>s+c.cost,0);
+    const totalTotal = Object.values(byCat).reduce((s,c)=>s+c.total,0);
+    const favUnfav = v => v>=0 ? '<span class="up">Příznivé</span>' : '<span class="down">Nepříznivé</span>';
 
-    new Chart(document.getElementById('chart-sales-region'), {
-        type: 'bar',
-        data: {
-            labels: S.by_region.labels,
-            datasets: [{ label:'Revenue (K CZK)', data: S.by_region.revenue, backgroundColor: alphaColor(chartColors.indigo,0.6), borderColor:chartColors.indigo, borderWidth:1, borderRadius:4 }]
-        },
-        options: mergeOpts({ plugins:{legend:{display:false}} })
-    });
-
-    new Chart(document.getElementById('chart-sales-channel'), {
-        type: 'doughnut',
-        data: {
-            labels: S.by_channel.labels,
-            datasets: [{ data: S.by_channel.revenue, backgroundColor: [chartColors.green,chartColors.indigo,chartColors.amber,chartColors.blue,chartColors.rose], borderWidth:0 }]
-        },
-        options: { responsive:true, maintainAspectRatio:false, cutout:'55%', plugins:{legend:{labels:{color:'#9ca3af',font:{size:11,family:'Inter'},padding:12,usePointStyle:true}}} }
-    });
-})();
-
-// ═══════════════════════════════════════════
-// 6. VARIANCE TAB
-// ═══════════════════════════════════════════
-(function renderVariance() {
-    const V = DATA_VARIANCE;
-    const totalVolume = V.volume_variance.reduce((a,b)=>a+b,0);
-    const totalPrice = V.price_variance.reduce((a,b)=>a+b,0);
-    const totalCost = V.cost_variance.reduce((a,b)=>a+b,0);
-    const totalMix = V.mix_variance.reduce((a,b)=>a+b,0);
-
-    document.getElementById('variance-hero-cards').innerHTML = [
-        heroCard('Volume Variance', fmtCZK(totalVolume), totalVolume>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-green'),
-        heroCard('Price Variance', fmtCZK(totalPrice), totalPrice>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-indigo'),
-        heroCard('Cost Variance', fmtCZK(totalCost), totalCost<0 ? '<span class="down">Unfavorable</span>' : '<span class="up">Favorable</span>', 'glow-rose'),
-        heroCard('Mix Variance', fmtCZK(totalMix), totalMix>0 ? '<span class="up">Favorable</span>' : '<span class="down">Unfavorable</span>', 'glow-violet'),
+    document.getElementById('var-heroes').innerHTML = [
+        heroCard('Objemová odchylka', CZKshort(totalVol), favUnfav(totalVol), 'glow-green'),
+        heroCard('Cenová odchylka', CZKshort(totalPrice), favUnfav(totalPrice), 'glow-indigo'),
+        heroCard('Nákladová odchylka', CZKshort(totalCost), favUnfav(-totalCost), 'glow-rose'),
+        heroCard('Celková odchylka', CZKshort(totalTotal), favUnfav(totalTotal), 'glow-violet'),
     ].join('');
 
-    new Chart(document.getElementById('chart-variance-decomp'), {
-        type: 'bar',
-        data: {
-            labels: V.categories,
-            datasets: [
-                { label: 'Volume', data: V.volume_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.green,0.6), borderRadius:3, borderWidth:0 },
-                { label: 'Price', data: V.price_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.indigo,0.6), borderRadius:3 },
-                { label: 'Cost', data: V.cost_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.rose,0.6), borderRadius:3 },
-                { label: 'Mix', data: V.mix_variance.map(v=>v/1e6), backgroundColor: alphaColor(chartColors.violet,0.6), borderRadius:3 }
-            ]
-        },
-        options: mergeOpts({ scales: { x: { stacked: true }, y: { stacked: true } } })
-    });
+    const cats = Object.keys(byCat).sort();
+    makeChart('c-var-decomp', {type:'bar', data:{labels:cats, datasets:[
+        {label:'Objemová',data:cats.map(c=>byCat[c].vol),backgroundColor:alphaC(COLORS.green,0.6),borderRadius:2},
+        {label:'Cenová',data:cats.map(c=>byCat[c].price),backgroundColor:alphaC(COLORS.indigo,0.6),borderRadius:2},
+        {label:'Nákladová',data:cats.map(c=>byCat[c].cost),backgroundColor:alphaC(COLORS.rose,0.6),borderRadius:2},
+    ]}, options:{...baseOpts(),scales:{x:{stacked:true,ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(75,85,99,0.12)'}},y:{stacked:true,ticks:{color:'#6b7280',font:{size:10},callback:v=>CZKshort(v)},grid:{color:'rgba(75,85,99,0.12)'}}}}});
 
-    new Chart(document.getElementById('chart-variance-monthly'), {
-        type: 'line',
-        data: {
-            labels: V.monthly_total.months,
-            datasets: [
-                { label: 'Actual (K)', data: V.monthly_total.actual, borderColor: chartColors.green, backgroundColor: alphaColor(chartColors.green,0.1), tension:0.3, fill:true, pointRadius:4 },
-                { label: 'Plan (K)', data: V.monthly_total.plan, borderColor: chartColors.blue, borderDash:[6,4], tension:0.3, pointRadius:3 }
-            ]
-        },
-        options: mergeOpts({})
-    });
+    const periods = Object.keys(byPeriod).sort();
+    makeChart('c-var-monthly', {type:'line', data:{labels:periods.map(fmtPeriodShort), datasets:[
+        {label:'Skutečnost',data:periods.map(p=>byPeriod[p].actual),borderColor:COLORS.green,backgroundColor:alphaC(COLORS.green,0.1),tension:0.3,fill:true,pointRadius:2},
+        {label:'Plán (předchozí rok)',data:periods.map(p=>byPeriod[p].plan),borderColor:COLORS.blue,borderDash:[5,3],tension:0.3,pointRadius:2}
+    ]}, options:baseOpts()});
 
-    // Variance table
-    let html = '<thead><tr><th>Category</th><th>Volume</th><th>Price</th><th>Cost</th><th>Mix</th><th>Total</th></tr></thead><tbody>';
-    V.categories.forEach((cat,i) => {
-        const cls = n => n >= 0 ? 'positive' : 'negative';
-        html += `<tr>
-            <td style="color:var(--text-primary);font-weight:500">${cat}</td>
-            <td class="${cls(V.volume_variance[i])}">${fmtCZK(V.volume_variance[i])}</td>
-            <td class="${cls(V.price_variance[i])}">${fmtCZK(V.price_variance[i])}</td>
-            <td class="${cls(-V.cost_variance[i])}">${fmtCZK(V.cost_variance[i])}</td>
-            <td class="${cls(V.mix_variance[i])}">${fmtCZK(V.mix_variance[i])}</td>
-            <td class="${cls(V.total_variance[i])}" style="font-size:14px">${fmtCZK(V.total_variance[i])}</td>
-        </tr>`;
+    // Table
+    let html='<thead><tr><th>Kategorie</th><th>Objemová</th><th>Cenová</th><th>Nákladová</th><th>Celková</th></tr></thead><tbody>';
+    cats.forEach(c => {
+        const cls = n => n>=0?'positive':'negative';
+        html+=`<tr><td style="color:var(--text-primary);font-weight:500">${c}</td>
+            <td class="${cls(byCat[c].vol)}">${CZKshort(byCat[c].vol)}</td>
+            <td class="${cls(byCat[c].price)}">${CZKshort(byCat[c].price)}</td>
+            <td class="${cls(-byCat[c].cost)}">${CZKshort(byCat[c].cost)}</td>
+            <td class="${cls(byCat[c].total)}" style="font-weight:700">${CZKshort(byCat[c].total)}</td></tr>`;
     });
-    html += '</tbody>';
-    document.getElementById('variance-table').innerHTML = html;
-})();
+    html+='</tbody>';
+    document.getElementById('var-table').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+// INIT + FILTER EVENTS
+// ═══════════════════════════════════════════
+renderAll();
+[elYear, elRegion, elCC, elCat].forEach(el => el.addEventListener('change', renderAll));
 </script>
 </body>
 </html>
