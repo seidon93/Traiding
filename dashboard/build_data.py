@@ -88,11 +88,12 @@ def main():
     # 1. KPIs (from transactions)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     print("  Computing KPIs...")
-    # Per period: revenue, cogs, opex, depreciation, receivables, payables, assets
+    # Per period: revenue, cogs, opex, depreciation, receivables, payables
     kpi_data = defaultdict(lambda: {
         "revenue": 0, "cogs": 0, "opex": 0, "depreciation": 0,
         "total_expenses": 0, "receivables": 0, "payables": 0,
-        "assets": 0, "equity": 0
+        "asset_debit": 0, "asset_credit": 0,
+        "equity_credit": 0, "equity_debit": 0
     })
 
     for t in transactions:
@@ -129,25 +130,37 @@ def main():
             if "Odpisy" in skupina:
                 kpi_data[period]["depreciation"] += amount
 
-        # Receivables
+        # Receivables (net: debit increases, credit decreases)
         if "Pohledávky" in debit_acc.get("skupina", ""):
             kpi_data[period]["receivables"] += amount
+        if "Pohledávky" in credit_acc.get("skupina", ""):
+            kpi_data[period]["receivables"] -= amount
 
-        # Payables (short-term)
+        # Payables (net: credit increases, debit decreases)
         if "Závazky" in credit_acc.get("skupina", "") and "Dlouhodobé" not in credit_acc.get("skupina", ""):
             kpi_data[period]["payables"] += amount
+        if "Závazky" in debit_acc.get("skupina", "") and "Dlouhodobé" not in debit_acc.get("skupina", ""):
+            kpi_data[period]["payables"] -= amount
 
-        # Assets
+        # Assets (debit = increase, credit = decrease)
         if debit_acc.get("typ") == "Aktiva":
-            kpi_data[period]["assets"] += amount
+            kpi_data[period]["asset_debit"] += amount
+        if credit_acc.get("typ") == "Aktiva":
+            kpi_data[period]["asset_credit"] += amount
 
-        # Equity
-        if credit_acc.get("skupina", "") in ("Vlastní kapitál", "Fondy", "Výsledek hospodaření"):
-            kpi_data[period]["equity"] += amount
+        # Equity (credit = increase, debit = decrease)
+        eq_groups = ("Vlastní kapitál", "Fondy", "Výsledek hospodaření")
+        if credit_acc.get("skupina", "") in eq_groups:
+            kpi_data[period]["equity_credit"] += amount
+        if debit_acc.get("skupina", "") in eq_groups:
+            kpi_data[period]["equity_debit"] += amount
 
-    # Build KPI output
+    # Build KPI output with cumulative balance sheet items
     kpi_periods = sorted(kpi_data.keys())
     kpis_output = []
+    cumulative_assets = 0.0
+    cumulative_equity = 0.0
+
     for p in kpi_periods:
         d = kpi_data[p]
         rev = d["revenue"]
@@ -160,6 +173,29 @@ def main():
         ebit = ebitda - depr
         net_income = rev - total_exp
 
+        # Running cumulative totals for balance sheet
+        cumulative_assets += (d["asset_debit"] - d["asset_credit"])
+        cumulative_equity += (d["equity_credit"] - d["equity_debit"])
+
+        # Use absolute value for denominator, ensure minimum to avoid division spikes
+        total_assets = max(abs(cumulative_assets), 1e6)
+        total_equity = max(abs(cumulative_equity), 1e6)
+
+        # Annualized ROA & ROE (monthly income * 12 / total balance)
+        roa = net_income / total_assets * 12 * 100
+        roe = net_income / total_equity * 12 * 100
+
+        # Clamp to realistic range
+        roa = max(-100, min(100, roa))
+        roe = max(-100, min(100, roe))
+
+        # DSO/DPO: use absolute value of net receivables/payables
+        dso = round(abs(d["receivables"]) / (rev / 30), 1) if rev > 0 else 0
+        dpo = round(abs(d["payables"]) / (opex / 30), 1) if opex > 0 else 0
+        # Cap DSO/DPO at 120 days max for realism
+        dso = min(dso, 120)
+        dpo = min(dpo, 120)
+
         kpis_output.append({
             "period": p,
             "revenue": round(rev, 2),
@@ -171,14 +207,14 @@ def main():
             "ebit": round(ebit, 2),
             "net_income": round(net_income, 2),
             "depreciation": round(depr, 2),
-            "dso_days": round(d["receivables"] / (rev / 30), 1) if rev else 0,
-            "dpo_days": round(d["payables"] / (opex / 30), 1) if opex else 0,
-            "roa_pct": round(net_income / d["assets"] * 12 * 100, 2) if d["assets"] else 0,
-            "roe_pct": round(net_income / d["equity"] * 12 * 100, 2) if d["equity"] else 0,
+            "dso_days": dso,
+            "dpo_days": dpo,
+            "roa_pct": round(roa, 2),
+            "roe_pct": round(roe, 2),
         })
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # Cashflow for burn rate
+    # Cashflow for burn rate (from fact_cashflow)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     cf_data = defaultdict(lambda: {"inflow": 0, "outflow": 0})
     for c in cashflow:
@@ -188,18 +224,21 @@ def main():
         if not period:
             continue
         amount = safe_float(c.get("castka"))
-        if amount > 0:
-            cf_data[period]["inflow"] += amount
-        else:
+        smer = c.get("smer", "")
+        if smer == "Příjem":
+            cf_data[period]["inflow"] += abs(amount)
+        elif smer == "Výdaj":
             cf_data[period]["outflow"] += abs(amount)
 
     # Merge cashflow into KPIs
     for k in kpis_output:
         p = k["period"]
-        k["cash_inflow"] = round(cf_data[p]["inflow"], 2)
-        k["cash_outflow"] = round(cf_data[p]["outflow"], 2)
-        k["net_cashflow"] = round(cf_data[p]["inflow"] - cf_data[p]["outflow"], 2)
-        k["burn_rate"] = round(cf_data[p]["outflow"], 2)
+        inflow = cf_data[p]["inflow"]
+        outflow = cf_data[p]["outflow"]
+        k["cash_inflow"] = round(inflow, 2)
+        k["cash_outflow"] = round(outflow, 2)
+        k["net_cashflow"] = round(inflow - outflow, 2)
+        k["burn_rate"] = round(outflow, 2)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 2. OPEX (from budget + accounts)

@@ -1,11 +1,3 @@
-﻿region_id,region_nazev,zeme
-REG01,Praha,CZ
-REG02,Středočeský,CZ
-REG03,Jihomoravský,CZ
-REG04,Moravskoslezský,CZ
-REG05,Plzeňský,CZ
-REG06,Královéhradecký,CZ
-REG07,Olomoucký,CZ
-REG08,Liberecký,CZ
-REG09,Bratislava,SK
-REG10,Wien,AT
+version https://git-lfs.github.com/spec/v1
+oid sha256:c618def2bcf7caceab43040fbdab63198b4cfe8af524ae08bb561e6f2919c113
+size 252

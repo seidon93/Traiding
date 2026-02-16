@@ -1,21 +1,3 @@
-﻿profit_centrum_id,nazev,region_id,manazer,stav,rocni_cil
-PC01,Retail CZ,REG03,Drahoslava Sýkorová,aktivní,38244284.6
-PC02,Wholesale CZ,REG09,Ján Fišer,neaktivní,45965427.97
-PC03,E-commerce,REG10,Jakub Růžička,aktivní,24685982.55
-PC04,B2B International,REG02,Štěpánka Bartošová,aktivní,43996732.95
-PC05,Services CZ,REG05,Věra Bednářová,aktivní,3367295.74
-PC06,Retail SK,REG10,Radoslav Král,aktivní,4739845.88
-PC07,Manufacturing,REG08,Luděk Sedlák,aktivní,48910232.44
-PC08,Consulting,REG09,Danuše Vaňková,aktivní,6855377.49
-PC09,Logistics,REG08,JUDr. Filip Dušek,neaktivní,8673784.47
-PC10,Financial Services,REG09,Ilona Kadlecová,neaktivní,21445328.04
-PC11,IT Solutions,REG04,Renáta Hrušková,neaktivní,37885627.23
-PC12,Custom Products,REG04,Jindřiška Vacková,neaktivní,15929956.42
-PC13,Maintenance,REG06,Richard Musil,aktivní,45030897.19
-PC14,After-sales,REG08,Soňa Dostálová,aktivní,12771327.88
-PC15,Export EU,REG02,Břetislav Kubíček,aktivní,1541195.87
-PC16,Government,REG09,Lubomír Staněk,aktivní,29627785.66
-PC17,Energy,REG01,Ctirad Urban,aktivní,35538126.85
-PC18,Healthcare,REG01,Kamila Blažková,aktivní,3836316.24
-PC19,Automotive,REG01,Michaela Brožová,aktivní,4007438.82
-PC20,Ostatní,REG04,Libuše Štěpánková,aktivní,33614400.03
+version https://git-lfs.github.com/spec/v1
+oid sha256:a41a1dc15dbfeb8abbf334a6204ca1235d222e6b5e85ee12c7e5f1dc82a40ead
+size 1324
