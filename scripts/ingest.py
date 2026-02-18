@@ -29,6 +29,8 @@ GITHUB_RAW_BASE = os.getenv(
     "https://raw.githubusercontent.com/seidon93/Data/main/financial_dataset",
 )
 
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "financial_dataset")
+
 DB_HOST = os.getenv("FINANCIAL_DB_HOST", "localhost")
 DB_PORT = os.getenv("FINANCIAL_DB_PORT", "5432")
 DB_USER = os.getenv("FINANCIAL_DB_USER", "financial_admin")
@@ -126,13 +128,21 @@ def load_to_postgres(df: pl.DataFrame, table_name: str, engine) -> int:
     return len(pdf)
 
 
-def ingest_file(filename: str, engine) -> int:
-    """Full pipeline for a single CSV file: download → sanitize → load."""
+def ingest_file(filename: str, engine, source: str = "local") -> int:
+    """Full pipeline for a single CSV file: download/read → sanitize → load."""
     log.info("─" * 50)
-    log.info("Processing: %s", filename)
+    log.info("Processing: %s (source: %s)", filename, source)
 
-    # Download
-    raw_bytes = download_csv(filename)
+    if source == "local":
+        path = os.path.join(DATA_DIR, filename)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Local file not found: {path}")
+        log.info("Reading local file: %s", path)
+        with open(path, "rb") as f:
+            raw_bytes = f.read()
+    else:
+        # Download
+        raw_bytes = download_csv(filename)
 
     # Read with Polars (handle BOM encoding)
     content = raw_bytes.decode("utf-8-sig")
@@ -150,12 +160,12 @@ def ingest_file(filename: str, engine) -> int:
     return rows
 
 
-def ingest_all(target_file: Optional[str] = None):
+def ingest_all(target_file: Optional[str] = None, source: str = "local"):
     """Run ingestion for all CSV files (or a single one)."""
     log.info("=" * 60)
     log.info("  FINANCIAL DATA INGESTION")
     log.info("=" * 60)
-    log.info("  Source: %s", GITHUB_RAW_BASE)
+    log.info("  Source: %s (%s)", DATA_DIR if source == "local" else GITHUB_RAW_BASE, source)
     log.info("  Target: %s (schema: %s)", DATABASE_URL.split("@")[1], RAW_SCHEMA)
 
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -170,7 +180,7 @@ def ingest_all(target_file: Optional[str] = None):
 
     for f in files:
         try:
-            rows = ingest_file(f, engine)
+            rows = ingest_file(f, engine, source=source)
             total_rows += rows
         except Exception as e:
             log.error("  ✗ FAILED %s: %s", f, e)
@@ -195,6 +205,7 @@ def ingest_all(target_file: Optional[str] = None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest financial CSV data from GitHub to PostgreSQL")
     parser.add_argument("--file", type=str, help="Single CSV filename to ingest (default: all)")
+    parser.add_argument("--source", type=str, choices=["local", "github"], default="local", help="Source of CSV files")
     args = parser.parse_args()
 
-    ingest_all(target_file=args.file)
+    ingest_all(target_file=args.file, source=args.source)

@@ -9,9 +9,10 @@ accts = {r['ucet_cislo']: r for r in csv.DictReader(open('financial_dataset/dim_
 # Revenue = credit to Výnosy where MD is NOT Výnosy/Závěrkové/Podrozvahové
 # Expenses = debit to Náklady where DAL is NOT Náklady/Závěrkové/Podrozvahové
 from collections import defaultdict
-kpi = defaultdict(lambda: {"rev": 0, "cogs": 0, "opex": 0, "depr": 0, "total_exp": 0,
-                            "recv_d": 0, "recv_c": 0, "pay_d": 0, "pay_c": 0,
-                            "asset_d": 0, "asset_c": 0})
+kpi: defaultdict[str, dict[str, float]] = defaultdict(lambda: {
+    "rev": 0.0, "cogs": 0.0, "opex": 0.0, "depr": 0.0, "total_exp": 0.0,
+    "recv_d": 0.0, "recv_c": 0.0, "pay_d": 0.0, "pay_c": 0.0,
+    "asset_d": 0.0, "asset_c": 0.0})
 
 skip_types = {'Závěrkové', 'Podrozvahové'}
 n = 0
@@ -66,7 +67,7 @@ print(f"\n{'Period':<10} {'Revenue':>15} {'COGS':>12} {'OPEX':>12} {'EBITDA':>15
 print("-" * 82)
 
 cum_recv = 0; cum_pay = 0; cum_assets = 0
-for p in sorted(kpi.keys())[:6]:  # first 6 months
+for p in list(sorted(kpi.keys()))[:6]:  # first 6 months
     d = kpi[p]
     rev = d["rev"]
     cogs = d["cogs"]

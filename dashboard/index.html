@@ -513,14 +513,24 @@
             background: rgba(99, 102, 241, 0.04);
         }
 
-        .data-table .positive {
-            color: var(--success);
-            font-weight: 600;
+        .data-table td.positive {
+            color: var(--green) !important;
+            font-weight: 700;
         }
 
-        .data-table .negative {
-            color: var(--danger);
-            font-weight: 600;
+        .data-table td.negative {
+            color: var(--rose) !important;
+            font-weight: 700;
+        }
+
+        #var-table th:not(:first-child),
+        #var-table td:not(:first-child) {
+            text-align: right;
+        }
+
+        #exp-table th:last-child,
+        #exp-table td:last-child {
+            text-align: right;
         }
 
         .chart-container {
@@ -615,6 +625,7 @@
         <div class="tab" data-tab="hr">👥 HR Budget</div>
         <div class="tab" data-tab="sales">🛒 Prodeje</div>
         <div class="tab" data-tab="variance">📊 Odchylky</div>
+        <div class="tab" data-tab="explorer">🔎 Průzkumník</div>
     </nav>
 
     <main class="content">
@@ -756,9 +767,54 @@
                 </div>
             </div>
         </section>
+
+        <!-- EXPLORER -->
+        <section class="tab-panel" id="panel-explorer">
+            <div class="section-header"><span class="icon"
+                    style="background:rgba(255,255,255,0.1);color:#fff">🔎</span>Průzkumník transakcí</div>
+            <div class="card">
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>Detailní pohled (posledních 2000 transakcí)</span>
+                    <span id="exp-count" style="font-weight:400;color:var(--text-muted)">Načítání...</span>
+                </div>
+                <div style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap">
+                    <select id="exp-stredisko"
+                        style="padding:10px 14px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;outline:none;min-width:180px">
+                        <option value="">Všechna střediska</option>
+                    </select>
+                    <select id="exp-datum"
+                        style="padding:10px 14px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;outline:none;min-width:120px">
+                        <option value="">Všechna období</option>
+                    </select>
+                    <input type="text" id="exp-ucet" placeholder="Účet (MD/Dal)..."
+                        style="padding:10px 14px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;outline:none;min-width:140px">
+                    <input type="text" id="exp-search" placeholder="Hledat text..."
+                        style="flex:1;padding:10px 14px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;outline:none">
+                </div>
+                <div
+                    style="overflow-x:auto;max-height:600px;border-radius:var(--radius-sm);border:1px solid var(--border)">
+                    <table class="data-table" id="exp-table">
+                        <thead
+                            style="position:sticky;top:0;background:var(--bg-card);backdrop-filter:blur(4px);z-index:1">
+                            <tr>
+                                <th>ID</th>
+                                <th>Datum</th>
+                                <th>Popis</th>
+                                <th>Účet MD</th>
+                                <th>Účet Dal</th>
+                                <th>Středisko</th>
+                                <th style="text-align:right">Částka</th>
+                            </tr>
+                        </thead>
+                        <tbody id="exp-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 
     <script src="data.js"></script>
+    <script src="explorer_data.js"></script>
     <script>
         // ═══════════════════════════════════════════
         // HELPERS
@@ -808,15 +864,35 @@
         // Global default: use circle as legend marker everywhere
         Chart.defaults.elements.point.pointStyle = 'circle';
 
-        const baseOpts = () => ({
+        const baseOpts = (fmt = 'czk') => ({
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { labels: { color: '#9ca3af', font: { size: 11, family: 'Inter' }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
-                tooltip: { backgroundColor: 'rgba(17,24,39,0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(75,85,99,0.3)', borderWidth: 1, padding: 10, cornerRadius: 8, titleFont: { weight: '600', family: 'Inter' }, bodyFont: { family: 'Inter' }, callbacks: { label: ctx => { const v = ctx.parsed.y ?? ctx.parsed; return ctx.dataset.label + ': ' + CZK.format(Math.round(v)) } } }
+                tooltip: {
+                    backgroundColor: 'rgba(17,24,39,0.95)', titleColor: '#f9fafb', bodyColor: '#d1d5db', borderColor: 'rgba(75,85,99,0.3)', borderWidth: 1, padding: 10, cornerRadius: 8, titleFont: { weight: '600', family: 'Inter' }, bodyFont: { family: 'Inter' },
+                    callbacks: {
+                        label: ctx => {
+                            const v = ctx.parsed.y ?? ctx.parsed;
+                            const l = ctx.dataset.label;
+                            if (fmt === 'pct') return l + ': ' + v.toFixed(1).replace('.', ',') + ' %';
+                            if (fmt === 'days') return l + ': ' + Math.round(v) + ' dní';
+                            return l + ': ' + CZK.format(Math.round(v));
+                        }
+                    }
+                }
             },
             scales: {
                 x: { ticks: { color: '#6b7280', font: { size: 10, family: 'Inter' } }, grid: { color: 'rgba(75,85,99,0.12)' } },
-                y: { ticks: { color: '#6b7280', font: { size: 10, family: 'Inter' }, callback: v => CZKshort(v) }, grid: { color: 'rgba(75,85,99,0.12)' } }
+                y: {
+                    ticks: {
+                        color: '#6b7280', font: { size: 10, family: 'Inter' },
+                        callback: v => {
+                            if (fmt === 'pct') return v.toFixed(0) + ' %';
+                            if (fmt === 'days') return v + ' dní';
+                            return CZKshort(v);
+                        }
+                    }, grid: { color: 'rgba(75,85,99,0.12)' }
+                }
             }
         });
 
@@ -932,7 +1008,7 @@
                         { label: 'Hrubá marže %', data: data.map(r => r.gross_margin_pct), borderColor: COLORS.green, tension: 0.3, pointStyle: 'circle', pointRadius: 2 },
                         { label: 'ROA %', data: data.map(r => r.roa_pct), borderColor: COLORS.amber, tension: 0.3, pointStyle: 'circle', pointRadius: 2 },
                     ]
-                }, options: { ...baseOpts(), scales: { ...baseOpts().scales, y: { ticks: { color: '#6b7280', font: { size: 10 }, callback: v => v.toFixed(0) + ' %' }, grid: { color: 'rgba(75,85,99,0.12)' } } } }
+                }, options: baseOpts('pct')
             });
 
             makeChart('c-kpi-dso', {
@@ -941,7 +1017,7 @@
                         { label: 'DSO (dny)', data: data.map(r => r.dso_days), borderColor: COLORS.blue, backgroundColor: alphaC(COLORS.blue, 0.1), tension: 0.3, fill: true, pointStyle: 'circle', pointRadius: 2 },
                         { label: 'DPO (dny)', data: data.map(r => r.dpo_days), borderColor: COLORS.amber, backgroundColor: alphaC(COLORS.amber, 0.1), tension: 0.3, fill: true, pointStyle: 'circle', pointRadius: 2 },
                     ]
-                }, options: { ...baseOpts(), scales: { ...baseOpts().scales, y: { ticks: { color: '#6b7280', font: { size: 10 }, callback: v => v + ' dní' }, grid: { color: 'rgba(75,85,99,0.12)' } } } }
+                }, options: baseOpts('days')
             });
 
             makeChart('c-kpi-cf', {
@@ -982,13 +1058,21 @@
                 heroCard('Celková odchylka', CZKshort(totalVar), totalVar > 0 ? '<span class="down">Přečerpáno</span>' : '<span class="up">Úspora</span>', 'glow-rose', totalVar),
             ].join('');
 
+            // Horizontal Bar: Swap X and Y scales
+            const optOpex = baseOpts();
+            optOpex.indexAxis = 'y';
+            optOpex.scales.x = { ...optOpex.scales.y }; // X becomes value axis
+            optOpex.scales.y = { ticks: { color: '#6b7280', font: { size: 10, family: 'Inter' }, autoSkip: false }, grid: { display: false } }; // Y becomes category axis
+            // Fix tooltip for horizontal bar (value is on X)
+            optOpex.plugins.tooltip.callbacks.label = ctx => ctx.dataset.label + ': ' + CZK.format(Math.round(ctx.parsed.x));
+
             makeChart('c-opex-bar', {
                 type: 'bar', data: {
                     labels: cats, datasets: [
                         { label: 'Plán', data: cats.map(c => byCat[c].planned), backgroundColor: alphaC(COLORS.blue, 0.45), borderRadius: 3, pointStyle: 'circle' },
                         { label: 'Skutečnost', data: cats.map(c => byCat[c].actual), backgroundColor: alphaC(COLORS.indigo, 0.65), borderRadius: 3, pointStyle: 'circle' }
                     ]
-                }, options: { ...baseOpts(), indexAxis: 'y' }
+                }, options: optOpex
             });
 
             makeChart('c-opex-doughnut', {
@@ -1022,7 +1106,7 @@
                 byPeriod[r.period].depr += r.depreciation;
             });
 
-            const cats = Object.keys(byCat).filter(c => c !== 'Odpisy' && c !== 'Oprávky').sort();
+            const cats = Object.keys(byCat).filter(c => c !== 'Oprávky').sort();
             const totalInv = cats.reduce((s, c) => s + byCat[c].investment, 0);
             const totalDepr = (byCat['Odpisy'] || { depreciation: 0 }).depreciation;
 
@@ -1038,7 +1122,10 @@
                         { label: 'Investice', data: cats.map(c => byCat[c].investment), backgroundColor: alphaC(COLORS.blue, 0.55), borderRadius: 3, pointStyle: 'circle' },
                         { label: 'Odpisy', data: cats.map(c => byCat[c].depreciation), backgroundColor: alphaC(COLORS.amber, 0.55), borderRadius: 3, pointStyle: 'circle' },
                     ]
-                }, options: baseOpts()
+                }, options: {
+                    ...baseOpts(),
+                    barPercentage: 0.6, categoryPercentage: 0.8
+                }
             });
 
             const periods = Object.keys(byPeriod).sort();
@@ -1119,7 +1206,11 @@
                 byPeriod[r.period].rev += r.revenue;
                 byPeriod[r.period].qty += r.quantity;
                 byPeriod[r.period].cogs += r.cogs;
-                byCat[r.product_category] = (byCat[r.product_category] || 0) + r.revenue;
+
+                if (!byCat[r.product_category]) byCat[r.product_category] = { rev: 0, qty: 0 };
+                byCat[r.product_category].rev += r.revenue;
+                byCat[r.product_category].qty += r.quantity;
+
                 byRegion[r.region] = (byRegion[r.region] || 0) + r.revenue;
                 byChannel[r.channel] = (byChannel[r.channel] || 0) + r.revenue;
                 totalQty += r.quantity; totalRev += r.revenue; totalCogs += r.cogs;
@@ -1142,10 +1233,24 @@
                 }, options: baseOpts()
             });
 
-            const catKeys = Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+            const catKeys = Object.entries(byCat).sort((a, b) => b[1].qty - a[1].qty).map(e => e[0]);
+
+            // Horizontal Bar: Swap X and Y scales
+            const optSales = baseOpts();
+            optSales.indexAxis = 'y';
+            optSales.scales.x = { ...optSales.scales.y, ticks: { ...optSales.scales.y.ticks, callback: v => v } }; // Quantity on X
+            optSales.scales.y = { ticks: { color: '#6b7280', font: { size: 10, family: 'Inter' }, autoSkip: false }, grid: { display: false } };
+
             makeChart('c-sales-cat', {
-                type: 'bar', data: { labels: catKeys, datasets: [{ label: 'Tržby', data: catKeys.map(c => byCat[c]), backgroundColor: COLOR_ARR.slice(0, catKeys.length), borderRadius: 3, pointStyle: 'circle' }] },
-                options: { ...baseOpts(), indexAxis: 'y', plugins: { ...baseOpts().plugins, legend: { display: false } } }
+                type: 'bar', data: { labels: catKeys, datasets: [{ label: 'Prodané kusy', data: catKeys.map(c => byCat[c].qty), backgroundColor: COLOR_ARR.slice(0, catKeys.length), borderRadius: 3, pointStyle: 'circle' }] },
+                options: {
+                    ...optSales,
+                    plugins: {
+                        ...optSales.plugins,
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.x.toLocaleString('cs-CZ') + ' ks' } }
+                    }
+                }
             });
 
             const regKeys = Object.entries(byRegion).sort((a, b) => b[1] - a[1]).map(e => e[0]);
@@ -1225,10 +1330,108 @@
             document.getElementById('var-table').innerHTML = html;
         }
 
+        // ── 7. EXPLORER ──
+        function populateExplorerFilters() {
+            if (typeof EXPLORER_DATA === 'undefined') return;
+            const centers = [...new Set(EXPLORER_DATA.map(r => r.stredisko).filter(Boolean))].sort();
+            const dates = [...new Set(EXPLORER_DATA.map(r => r.datum.substring(0, 7)))].sort().reverse();
+
+            const elCenter = document.getElementById('exp-stredisko');
+            if (elCenter.options.length <= 1) {
+                centers.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    elCenter.appendChild(opt);
+                });
+            }
+
+            const elDate = document.getElementById('exp-datum');
+            if (elDate.options.length <= 1) {
+                dates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    elDate.appendChild(opt);
+                });
+            }
+        }
+
+        function renderExplorer() {
+            if (typeof EXPLORER_DATA === 'undefined') return;
+            // Populate filters if empty
+            if (document.getElementById('exp-stredisko').options.length <= 1) populateExplorerFilters();
+
+            const search = (document.getElementById('exp-search').value || '').toLowerCase();
+            const filterCenter = document.getElementById('exp-stredisko').value;
+            const filterDate = document.getElementById('exp-datum').value; // YYYY-MM
+            const filterAccount = (document.getElementById('exp-ucet').value || '').toLowerCase();
+
+            const rows = EXPLORER_DATA.filter(r => {
+                // 1. Center Filter
+                if (filterCenter && r.stredisko !== filterCenter) return false;
+                // 2. Date Filter (YYYY-MM)
+                if (filterDate && !r.datum.startsWith(filterDate)) return false;
+                // 3. Account Filter
+                if (filterAccount && !(
+                    r.ucet_md.includes(filterAccount) ||
+                    r.ucet_dal.includes(filterAccount) ||
+                    (r.ucet_md_nazev || '').toLowerCase().includes(filterAccount) ||
+                    (r.ucet_dal_nazev || '').toLowerCase().includes(filterAccount)
+                )) return false;
+                // 4. Text Search
+                if (search && !(
+                    r.id.toLowerCase().includes(search) ||
+                    r.popis.toLowerCase().includes(search) ||
+                    r.ucet_md.includes(search) ||
+                    r.ucet_dal.includes(search) ||
+                    (r.ucet_md_nazev || '').toLowerCase().includes(search) ||
+                    (r.ucet_dal_nazev || '').toLowerCase().includes(search) ||
+                    (r.stredisko || '').toLowerCase().includes(search) ||
+                    Math.round(r.castka).toString().includes(search)
+                )) return false;
+
+                return true;
+            });
+
+            let html = '';
+            // Limit to 200 for rendering performance
+            rows.slice(0, 200).forEach(r => {
+                html += `<tr>
+                    <td style="color:var(--text-muted);font-family:monospace">${r.id}</td>
+                    <td>${r.datum}</td>
+                    <td style="font-weight:500;color:var(--text-primary)">
+                        ${r.popis}
+                        <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${r.typ}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600;color:var(--accent-primary)">${r.ucet_md}</div>
+                        <div style="font-size:10px;color:var(--text-muted);line-height:1.2;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.ucet_md_nazev}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600;color:var(--accent-primary)">${r.ucet_dal}</div>
+                        <div style="font-size:10px;color:var(--text-muted);line-height:1.2;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.ucet_dal_nazev}</div>
+                    </td>
+                    <td>${r.stredisko}</td>
+                    <td style="text-align:right;font-weight:700;font-feature-settings:'tnum'">${CZK.format(r.castka)}</td>
+                </tr>`;
+            });
+            document.getElementById('exp-table-body').innerHTML = html;
+            document.getElementById('exp-count').textContent = rows.length + ' / ' + EXPLORER_DATA.length + ' zobrazeno (max 200)';
+        }
+
+        document.getElementById('exp-search').addEventListener('input', renderExplorer);
+        document.getElementById('exp-stredisko').addEventListener('change', renderExplorer);
+        document.getElementById('exp-datum').addEventListener('change', renderExplorer);
+        document.getElementById('exp-ucet').addEventListener('input', renderExplorer);
+
+        // ═══════════════════════════════════════════
+        // INIT + FILTER EVENTS
         // ═══════════════════════════════════════════
         // INIT + FILTER EVENTS
         // ═══════════════════════════════════════════
         renderAll();
+        renderExplorer();
         [elYear, elRegion, elCC, elCat].forEach(el => el.addEventListener('change', renderAll));
     </script>
 </body>

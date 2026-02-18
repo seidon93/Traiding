@@ -15,12 +15,51 @@ CSV_DIR = os.path.join(BASE_DIR, "financial_dataset")
 OUT_FILE = os.path.join(BASE_DIR, "dashboard", "data.js")
 
 
-def read_csv(filename):
+# helper for reading CSV with BOM handling and robust column name handling
+def read_csv_to_dicts(filename, key_col):
+    """
+    Reads a CSV file into a dictionary where keys are from key_col.
+    Handles BOM, strips whitespace from headers, and provides robust key_col lookup.
+    """
+    path = os.path.join(CSV_DIR, filename)
+    data_map = {}
+    try:
+        with open(path, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            # Normalize headers (strip whitespace)
+            if reader.fieldnames:
+                reader.fieldnames = [n.strip() for n in reader.fieldnames]
+            
+            # Verify key col exists, handle potential BOM prefix if utf-8-sig didn't catch it in header
+            actual_key_col = key_col
+            if key_col not in reader.fieldnames:
+                potential = [k for k in reader.fieldnames if key_col in k]
+                if potential:
+                    print(f"Warning: Column '{key_col}' not found perfectly in {filename}, using '{potential[0]}'")
+                    actual_key_col = potential[0]
+                else:
+                    print(f"Error: Key column '{key_col}' not found in {filename}. Available: {reader.fieldnames}")
+                    return {} # Return empty if key_col is critical and not found
+            
+            for row in reader:
+                val = row.get(actual_key_col)
+                if val:
+                    data_map[val] = row
+        print(f"Loaded {len(data_map)} rows from {os.path.basename(path)}")
+        return data_map
+    except Exception as e:
+        print(f"Error reading {path}: {e}")
+        return {}
+
+def read_csv_list(filename):
     """Read a CSV file and return list of dicts, handling BOM."""
     path = os.path.join(CSV_DIR, filename)
     rows = []
     with open(path, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
+        # Normalize headers (strip whitespace)
+        if reader.fieldnames:
+            reader.fieldnames = [n.strip() for n in reader.fieldnames]
         for row in reader:
             rows.append(row)
     return rows
@@ -51,22 +90,22 @@ def main():
     print("Loading CSVs...")
 
     # ── Dimensions ──
-    accounts = {r["ucet_cislo"]: r for r in read_csv("dim_ucty.csv")}
-    cost_centers = {r["stredisko_id"]: r for r in read_csv("dim_strediska.csv")}
-    branches = {r["pobocka_id"]: r for r in read_csv("dim_pobocky.csv")}
-    regions = {r["region_id"]: r for r in read_csv("dim_regiony.csv")}
-    products = {r["produkt_id"]: r for r in read_csv("dim_produkty.csv")}
-    employees = {r["zamestnanec_id"]: r for r in read_csv("dim_zamestnanci.csv")}
-    profit_centers = {r["profit_centrum_id"]: r for r in read_csv("dim_profit_centra.csv")}
+    accounts = read_csv_to_dicts("dim_ucty.csv", "ucet_cislo")
+    cost_centers = read_csv_to_dicts("dim_strediska.csv", "stredisko_id")
+    branches = read_csv_to_dicts("dim_pobocky.csv", "pobocka_id")
+    regions = read_csv_to_dicts("dim_regiony.csv", "region_id")
+    products = read_csv_to_dicts("dim_produkty.csv", "produkt_id")
+    employees = read_csv_to_dicts("dim_zamestnanci.csv", "zamestnanec_id")
+    profit_centers = read_csv_to_dicts("dim_profit_centra.csv", "profit_centrum_id")
 
     # ── Facts ──
-    transactions = read_csv("fact_transakce.csv")
-    budget = read_csv("fact_budget.csv")
-    sales = read_csv("fact_prodeje.csv")
-    payroll = read_csv("fact_mzdy.csv")
-    purchases = read_csv("fact_nakupy.csv")
-    production = read_csv("fact_vyrobni_zakazky.csv")
-    cashflow = read_csv("fact_cashflow.csv")
+    transactions = read_csv_list("fact_transakce.csv")
+    budget = read_csv_list("fact_budget.csv")
+    sales = read_csv_list("fact_prodeje.csv")
+    payroll = read_csv_list("fact_mzdy.csv")
+    purchases = read_csv_list("fact_nakupy.csv")
+    production = read_csv_list("fact_vyrobni_zakazky.csv")
+    # cashflow = read_csv_list("fact_cashflow.csv") - Removed
 
     # ── Build lookup helpers ──
     def get_region_for_branch(branch_id):
@@ -77,6 +116,9 @@ def main():
     def get_region_for_cc(cc_id):
         cc = cost_centers.get(cc_id, {})
         return get_region_for_branch(cc.get("pobocka_id", ""))
+
+    def get_account_group(acc_id):
+        return accounts.get(acc_id, {}).get("skupina", "")
 
     # Collect all unique filter values
     all_years = set()
@@ -90,10 +132,12 @@ def main():
     print("  Computing KPIs...")
     # Per period: revenue, cogs, opex, depreciation, receivables, payables
     kpi_data = defaultdict(lambda: {
-        "revenue": 0, "cogs": 0, "opex": 0, "depreciation": 0,
-        "total_expenses": 0, "receivables": 0, "payables": 0,
-        "asset_debit": 0, "asset_credit": 0,
-        "equity_credit": 0, "equity_debit": 0
+        "revenue": 0.0, "cogs": 0.0, "opex": 0.0, "depreciation": 0.0,
+        "total_expenses": 0.0, "receivables": 0.0, "payables": 0.0,
+        "asset_debit": 0.0, "asset_credit": 0.0,
+        "equity_credit": 0.0, "equity_debit": 0.0,
+        "liab_credit": 0.0, "liab_debit": 0.0,
+        "cash_inflow": 0.0, "cash_outflow": 0.0
     })
 
     for t in transactions:
@@ -105,6 +149,8 @@ def main():
         amount = safe_float(t.get("castka_czk"))
         debit_acc = accounts.get(t.get("ucet_md"), {})
         credit_acc = accounts.get(t.get("ucet_dal"), {})
+        ds = debit_acc.get("skupina", "")
+        cs = credit_acc.get("skupina", "")
         year = period[:4]
         all_years.add(year)
 
@@ -112,56 +158,87 @@ def main():
         if cc_id:
             all_cc_ids.add(cc_id)
 
-        # Revenue: credit to Výnosy accounts
+        # Strict Balance Sheet & P&L Logic
+        # Revenue
         if credit_acc.get("typ") == "Výnosy":
             kpi_data[period]["revenue"] += amount
-
-        # COGS: debit to Spotřebované nákupy
-        if debit_acc.get("skupina", "").startswith("Spotřebované"):
-            kpi_data[period]["cogs"] += amount
-
-        # OPEX: all Náklady except Odpisy and Daně z příjmů
+            
+        # Expenses
         if debit_acc.get("typ") == "Náklady":
-            skupina = debit_acc.get("skupina", "")
             kpi_data[period]["total_expenses"] += amount
-            if "Odpisy" not in skupina:
-                if "Daně z příjmů" not in skupina:
-                    kpi_data[period]["opex"] += amount
-            if "Odpisy" in skupina:
+            if ds.startswith("50") or "Spotřebované" in ds:
+                kpi_data[period]["cogs"] += amount
+            elif "Odpisy" in ds or ds.startswith("55"):
                 kpi_data[period]["depreciation"] += amount
+            elif "Daně z příjmů" in ds or ds.startswith("59"):
+                pass
+            else:
+                kpi_data[period]["opex"] += amount
 
-        # Receivables (net: debit increases, credit decreases)
-        if "Pohledávky" in debit_acc.get("skupina", ""):
-            kpi_data[period]["receivables"] += amount
-        if "Pohledávky" in credit_acc.get("skupina", ""):
-            kpi_data[period]["receivables"] -= amount
-
-        # Payables (net: credit increases, debit decreases)
-        if "Závazky" in credit_acc.get("skupina", "") and "Dlouhodobé" not in credit_acc.get("skupina", ""):
-            kpi_data[period]["payables"] += amount
-        if "Závazky" in debit_acc.get("skupina", "") and "Dlouhodobé" not in debit_acc.get("skupina", ""):
-            kpi_data[period]["payables"] -= amount
-
-        # Assets (debit = increase, credit = decrease)
+        # Assets (Aktiva) - Debit increases
         if debit_acc.get("typ") == "Aktiva":
             kpi_data[period]["asset_debit"] += amount
         if credit_acc.get("typ") == "Aktiva":
             kpi_data[period]["asset_credit"] += amount
+            
+        # Liabilities & Equity (Pasiva) - Credit increases
+        # Equity is Class 4, Groups 41, 42, 43
+        equity_groups = ("41", "42", "43")
+        
+        # Check Debit Side
+        if debit_acc.get("typ") == "Pasiva":
+            grp = debit_acc.get("ucet_cislo", "")[:2]
+            if grp in equity_groups:
+                kpi_data[period]["equity_debit"] += amount
+            else:
+                kpi_data[period]["liab_debit"] += amount
+                
+        # Check Credit Side
+        if credit_acc.get("typ") == "Pasiva":
+            grp = credit_acc.get("ucet_cislo", "")[:2]
+            if grp in equity_groups:
+                kpi_data[period]["equity_credit"] += amount
+            else:
+                kpi_data[period]["liab_credit"] += amount
 
-        # Equity (credit = increase, debit = decrease)
-        eq_groups = ("Vlastní kapitál", "Fondy", "Výsledek hospodaření")
-        if credit_acc.get("skupina", "") in eq_groups:
-            kpi_data[period]["equity_credit"] += amount
-        if debit_acc.get("skupina", "") in eq_groups:
-            kpi_data[period]["equity_debit"] += amount
+        # Cash Flow (Groups 21, 22)
+        # Inflow = Debit 21/22? No, Debit 221 means money came IN to bank. Correct.
+        # Outflow = Credit 221 means money went OUT. Correct.
+        # Exclude transfers between 21 and 22?
+        # If D=211 C=221 (Withdrawal): Inflow 211, Outflow 221. Net 0. Correct.
+        if debit_acc.get("ucet_cislo", "").startswith(("21", "22")):
+            kpi_data[period]["cash_inflow"] += amount
+        if credit_acc.get("ucet_cislo", "").startswith(("21", "22")):
+            kpi_data[period]["cash_outflow"] += amount
+
+        # Receivables (Class 3 Aktiva typically)
+        if "Pohledávky" in debit_acc.get("skupina", ""):
+            kpi_data[period]["receivables"] += amount
+        if "Pohledávky" in credit_acc.get("skupina", ""):
+             kpi_data[period]["receivables"] -= amount
+
+        # Payables (Class 3 Pasiva typically)
+        if "Závazky" in credit_acc.get("skupina", ""):
+            kpi_data[period]["payables"] += amount
+        if "Závazky" in debit_acc.get("skupina", ""):
+             kpi_data[period]["payables"] -= amount
 
     # Build KPI output with cumulative balance sheet items
     kpi_periods = sorted(kpi_data.keys())
     kpis_output = []
     cumulative_assets = 0.0
     cumulative_equity = 0.0
+    cumulative_liabs = 0.0
+    
+    ytd_net_income = 0.0
+    current_year_tracker = ""
 
     for p in kpi_periods:
+        year = p[:4]
+        if year != current_year_tracker:
+            current_year_tracker = year
+            ytd_net_income = 0.0
+
         d = kpi_data[p]
         rev = d["revenue"]
         cogs = d["cogs"]
@@ -169,21 +246,34 @@ def main():
         depr = d["depreciation"]
         total_exp = d["total_expenses"]
         gross_profit = rev - cogs
-        ebitda = rev - opex
+        ebitda = rev - cogs - opex
         ebit = ebitda - depr
         net_income = rev - total_exp
+        
+        ytd_net_income += net_income
+        month_idx = int(p.split('-')[1])
+        annualized_ni = (ytd_net_income / month_idx) * 12 if month_idx > 0 else 0
 
         # Running cumulative totals for balance sheet
+        # Assets (Debit positive)
         cumulative_assets += (d["asset_debit"] - d["asset_credit"])
+        # Equity (Credit positive)
         cumulative_equity += (d["equity_credit"] - d["equity_debit"])
-
-        # Use absolute value for denominator, ensure minimum to avoid division spikes
+        # Liabilities (Credit positive)
+        cumulative_liabs += (d["liab_credit"] - d["liab_debit"])
+        
+        # Raw values for diagnostics
+        raw_assets = cumulative_assets
+        raw_liabs = cumulative_liabs
+        raw_equity = cumulative_equity
+        
+        # Adjusted for KPI denominators (avoid div/0)
         total_assets = max(abs(cumulative_assets), 1e6)
         total_equity = max(abs(cumulative_equity), 1e6)
 
-        # Annualized ROA & ROE (monthly income * 12 / total balance)
-        roa = net_income / total_assets * 12 * 100
-        roe = net_income / total_equity * 12 * 100
+        # Annualized ROA & ROE (using YTD average to smooth out tax/bonus spikes)
+        roa = annualized_ni / total_assets * 100
+        roe = annualized_ni / total_equity * 100
 
         # Clamp to realistic range
         roa = max(-100, min(100, roa))
@@ -207,38 +297,19 @@ def main():
             "ebit": round(ebit, 2),
             "net_income": round(net_income, 2),
             "depreciation": round(depr, 2),
+            "total_assets": round(raw_assets, 2),
+            "total_equity": round(raw_equity, 2),
+            "total_liabilities": round(raw_liabs, 2),
             "dso_days": dso,
             "dpo_days": dpo,
             "roa_pct": round(roa, 2),
             "roe_pct": round(roe, 2),
+            "cash_inflow": round(d["cash_inflow"], 2),
+            "cash_outflow": round(d["cash_outflow"], 2),
+            "net_cashflow": round(d["cash_inflow"] - d["cash_outflow"], 2),
+            "burn_rate": round(d["cash_outflow"], 2),
         })
 
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # Cashflow for burn rate (from fact_cashflow)
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    cf_data = defaultdict(lambda: {"inflow": 0, "outflow": 0})
-    for c in cashflow:
-        if c.get("stav") != "Realizováno":
-            continue
-        period = period_from_date(c.get("datum"))
-        if not period:
-            continue
-        amount = safe_float(c.get("castka"))
-        smer = c.get("smer", "")
-        if smer == "Příjem":
-            cf_data[period]["inflow"] += abs(amount)
-        elif smer == "Výdaj":
-            cf_data[period]["outflow"] += abs(amount)
-
-    # Merge cashflow into KPIs
-    for k in kpis_output:
-        p = k["period"]
-        inflow = cf_data[p]["inflow"]
-        outflow = cf_data[p]["outflow"]
-        k["cash_inflow"] = round(inflow, 2)
-        k["cash_outflow"] = round(outflow, 2)
-        k["net_cashflow"] = round(inflow - outflow, 2)
-        k["burn_rate"] = round(outflow, 2)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 2. OPEX (from budget + accounts)
@@ -550,6 +621,35 @@ def main():
         f.write(js_content)
 
     print(f"\n✅ Generated {OUT_FILE}")
+    
+    # ---------------------------------------------------------
+    # EXPLORER DATA
+    # ---------------------------------------------------------
+    explorer_txs = []
+    # Take last 2000 transactions
+    recent_txs = transactions[-2000:]
+    
+    for t in recent_txs:
+        row = {
+            "id": t["transakce_id"],
+            "datum": t["datum"],
+            "popis": t["popis"],
+            "castka": float(t["castka"]),
+            "ucet_md": t["ucet_md"],
+            "ucet_dal": t["ucet_dal"],
+            "ucet_md_nazev": accounts.get(t["ucet_md"], {}).get("nazev", ""),
+            "ucet_dal_nazev": accounts.get(t["ucet_dal"], {}).get("nazev", ""),
+            "stredisko": cost_centers.get(t["stredisko_id"], {}).get("stredisko_nazev", t["stredisko_id"]),
+            "typ": t["typ_dokladu"]
+        }
+        explorer_txs.append(row)
+        
+    explorer_js = f"const EXPLORER_DATA = {json.dumps(explorer_txs, ensure_ascii=False, indent=2)};"
+    exp_path = os.path.join(BASE_DIR, "dashboard", "explorer_data.js")
+    
+    with open(exp_path, 'w', encoding='utf-8') as f:
+        f.write(explorer_js)
+    print(f"✅ Generated {exp_path} ({len(explorer_txs)} transactions)")
     print(f"   KPIs:     {len(kpis_output)} periods")
     print(f"   OPEX:     {len(opex_rows)} rows")
     print(f"   CAPEX:    {len(capex_rows)} rows")
@@ -557,6 +657,44 @@ def main():
     print(f"   Sales:    {len(sales_rows)} rows")
     print(f"   Variance: {len(variance_rows)} rows")
     print(f"   Filters:  {len(filters['years'])} years, {len(filters['cost_centers'])} CC, {len(filters['regions'])} regions, {len(filters['categories'])} categories")
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Diagnostic Output (_diag7.txt)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    diag_path = os.path.join(BASE_DIR, "dashboard", "_diag7.txt")
+    print(f"\nWriting diagnostics to {diag_path}...")
+    with open(diag_path, "w", encoding="utf-8") as f:
+        f.write(f"{'PERIOD':<10} | {'ASSETS':>15} | {'LIABILITIES':>15} | {'EQUITY':>15} | {'NET_INCOME':>15} | {'DIFF (A-L-E-NI)':>18} | {'CHECK'}\n")
+        f.write("-" * 110 + "\n")
+        
+        # We need to accumulate net_income over time to reconcile Equity if 'closing' didn't happen to equity account
+        # But wait, my generator tracks Retained Earnings? 
+        # No, 'net_income' is P&L for the period. 
+        # In strict accounting, A = L + E. 
+        # E (Equity) typically includes 'Current Earnings' (Net Income).
+        # My 'total_equity' is from Class 4. 
+        # Net Income is Class 5 vs 6. 
+        # So A = L + E_book + NetIncome_cumulative?
+        # Yes, until Net Income is moved to Retained Earnings (Class 4).
+        # In my generator, I don't move NI to 431 until... well, I didn't verify closing logic.
+        # Generator has 'Closing' logic?
+        # No, I removed explicit closing entries in previous turn's plan "No Explicit Closing Entries".
+        # So 'Balance Sheet' will be balanced ONLY IF we include (Revenue - Expense) as part of Equity.
+        # So Check = Assets - (Liabilities + Equity_Book + Cumulative_Net_Income).
+        
+        cum_ni = 0.0
+        for k in kpis_output:
+            p = k["period"]
+            assets = k["total_assets"]
+            liabs = k["total_liabilities"]
+            equity = k["total_equity"] # Class 4
+            ni = k["net_income"]
+            cum_ni += ni
+            
+            diff = assets - (liabs + equity + cum_ni)
+            status = "OK" if abs(diff) < 1000 else "FAIL" # 1000 tolerance for rounding
+            
+            f.write(f"{p:<10} | {assets:>15,.2f} | {liabs:>15,.2f} | {equity:>15,.2f} | {cum_ni:>15,.2f} | {diff:>18,.2f} | {status}\n")
 
 
 if __name__ == "__main__":

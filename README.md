@@ -7,44 +7,22 @@ Production-grade financial data pipeline for Czech accounting data. Transforms 1
 ## 📐 Architecture
 
 ```mermaid
-graph LR
-    subgraph Sources
-        GH["📂 GitHub CSV<br>17 files"]
+graph TD
+    subgraph "1. Data Generation"
+        GEN[generate_financial_dataset.py] -->|Outputs CSVs| RAW[./financial_dataset/*.csv]
+        RULES[Generation Rules] --> GEN
     end
 
-    subgraph Ingestion
-        AF["🔄 Airflow DAG"]
-        PY["🐍 Python + Polars"]
+    subgraph "2. Processing & Validation"
+        RAW --> BUILD[build_data.py]
+        BUILD -->|Validates| CHECKS{Integrity Checks}
+        CHECKS -->|Pass| JSON[dashboard/data.js]
+        CHECKS -->|Fail| ERR[Error Log]
     end
 
-    subgraph PostgreSQL
-        RAW["raw schema<br>17 tables"]
-        STG["staging schema<br>17 views"]
-        INT["intermediate schema<br>4 views"]
-        MRT["marts schema<br>10 tables"]
+    subgraph "3. Interactive Dashboard"
+        JSON --> VIZ[dashboard/index.html]
     end
-
-    subgraph dbt
-        DBT["dbt run"]
-        TST["dbt test"]
-        DOC["dbt docs"]
-    end
-
-    subgraph Dashboard
-        VIZ["📊 Interactive<br>HTML Dashboard"]
-    end
-
-    GH --> AF --> PY --> RAW
-    RAW --> DBT --> STG --> INT --> MRT
-    DBT --> TST
-    DBT --> DOC
-    MRT --> VIZ
-
-    style RAW fill:#e74c3c,color:#fff
-    style STG fill:#f39c12,color:#fff
-    style INT fill:#3498db,color:#fff
-    style MRT fill:#27ae60,color:#fff
-    style VIZ fill:#8b5cf6,color:#fff
 ```
 
 ---
@@ -53,64 +31,21 @@ graph LR
 
 ```mermaid
 erDiagram
-    dim_regiony ||--o{ dim_pobocky : "region_id"
-    dim_pobocky ||--o{ dim_strediska : "pobocka_id"
-    dim_regiony ||--o{ dim_profit_centra : "region_id"
-    dim_regiony ||--o{ dim_zakaznici : "region_id"
-    dim_strediska ||--o{ dim_zamestnanci : "stredisko_id"
-
-    fact_transakce }o--|| dim_ucty : "ucet_md / ucet_dal"
-    fact_transakce }o--|| dim_strediska : "stredisko_id"
-    fact_transakce }o--|| dim_projekty : "projekt_id"
-    fact_transakce }o--|| dim_profit_centra : "profit_centrum_id"
-    fact_transakce }o--|| dim_pobocky : "pobocka_id"
-
-    fact_prodeje }o--|| dim_zakaznici : "zakaznik_id"
-    fact_prodeje }o--|| dim_produkty : "produkt_id"
-    fact_prodeje }o--|| dim_pobocky : "pobocka_id"
-
-    fact_nakupy }o--|| dim_dodavatele : "dodavatel_id"
-    fact_nakupy }o--|| dim_strediska : "stredisko_id"
-
-    fact_mzdy }o--|| dim_zamestnanci : "zamestnanec_id"
-    fact_mzdy }o--|| dim_strediska : "stredisko_id"
-
-    fact_vyrobni_zakazky }o--|| dim_produkty : "produkt_id"
-    fact_vyrobni_zakazky }o--|| dim_strediska : "stredisko_id"
-
-    fact_cashflow }o--|| dim_pobocky : "pobocka_id"
-    fact_cashflow }o--|| dim_ucty : "ucet"
-
-    fact_budget }o--|| dim_strediska : "stredisko_id"
-    fact_budget }o--|| dim_ucty : "ucet_cislo"
-
-    dim_regiony {
-        string region_id PK
-        string region_nazev
-        string zeme
-    }
-    dim_pobocky {
-        string pobocka_id PK
-        string pobocka_nazev
-        string region_id FK
-    }
-    dim_strediska {
-        string stredisko_id PK
-        string typ
-        string pobocka_id FK
-    }
-    dim_ucty {
-        string ucet_cislo PK
-        string typ
-        string skupina
-    }
-    fact_transakce {
-        string transakce_id PK
+    FACT_TRANSAKCE ||--|| DIM_UCTY : "has account"
+    FACT_TRANSAKCE ||--|| DIM_POBOCKY : "belongs to"
+    FACT_TRANSAKCE ||--|| DIM_PRODUKTY : "relates to"
+    FACT_TRANSAKCE ||--|| DIM_ZAKAZNICI : "invoiced to"
+    
+    DIM_POBOCKY ||--|{ DIM_REGIONY : "in region"
+    DIM_PRODUKTY ||--|{ DIM_KATEGORIE : "in category"
+    
+    FACT_TRANSAKCE {
+        string id PK
         date datum
-        numeric castka
-        string mena
         string ucet_md FK
         string ucet_dal FK
+        float castka
+        string stredisko FK
     }
 ```
 
