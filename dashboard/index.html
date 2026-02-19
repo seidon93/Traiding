@@ -1124,7 +1124,7 @@
                     ]
                 }, options: {
                     ...baseOpts(),
-                    barPercentage: 0.6, categoryPercentage: 0.8
+                    barPercentage: 0.7, categoryPercentage: 0.9
                 }
             });
 
@@ -1219,7 +1219,7 @@
             const gm = totalRev ? (totalRev - totalCogs) / totalRev * 100 : 0;
             document.getElementById('sales-heroes').innerHTML = [
                 heroCard('Celkové tržby', CZKshort(totalRev), f.year === 'all' ? 'Celé období' : 'Rok ' + f.year, 'glow-green', totalRev),
-                heroCard('Prodané kusy', totalQty.toLocaleString('cs-CZ'), 'Celkový objem', 'glow-blue'),
+                heroCard('Prodané kusy', totalQty.toLocaleString('cs-CZ') + ' ks', 'Celkový objem', 'glow-blue'),
                 heroCard('Hrubá marže', pct(gm), 'Tržby − COGS / Tržby', 'glow-violet', gm),
                 heroCard('Prům. cena', totalQty ? CZKshort(totalRev / totalQty) : '0 Kč', 'Na jednotku', 'glow-amber'),
             ].join('');
@@ -1238,7 +1238,7 @@
             // Horizontal Bar: Swap X and Y scales
             const optSales = baseOpts();
             optSales.indexAxis = 'y';
-            optSales.scales.x = { ...optSales.scales.y, ticks: { ...optSales.scales.y.ticks, callback: v => v } }; // Quantity on X
+            optSales.scales.x = { ...optSales.scales.y, ticks: { ...optSales.scales.y.ticks, callback: v => v.toLocaleString('cs-CZ') + ' ks' } }; // Quantity on X
             optSales.scales.y = { ticks: { color: '#6b7280', font: { size: 10, family: 'Inter' }, autoSkip: false }, grid: { display: false } };
 
             makeChart('c-sales-cat', {

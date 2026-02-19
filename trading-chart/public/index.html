@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Chart Pro</title>
+  <meta name="description" content="Professional trading chart with real-time stock and crypto data, multi-timeframe analysis, and technical indicators">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ═══ TOP BAR ═══ -->
+  <header id="topBar">
+    <div class="top-left">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 17l4-4 4 4 6-8 4 4" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="3" y1="17" x2="21" y2="9"><stop stop-color="#00d4aa"/><stop offset="1" stop-color="#7b61ff"/></linearGradient></defs></svg>
+        <span>TradePro</span>
+      </div>
+      <div class="search-container">
+        <input type="text" id="tickerInput" placeholder="Search ticker... (AAPL, BTCUSDT)" autocomplete="off" spellcheck="false">
+        <div id="searchResults" class="search-results"></div>
+      </div>
+      <div class="ticker-info" id="tickerInfo">
+        <span class="ticker-symbol" id="tickerSymbol">AAPL</span>
+        <span class="ticker-name" id="tickerName">Apple Inc.</span>
+        <span class="ticker-price" id="tickerPrice">—</span>
+        <span class="ticker-change" id="tickerChange">—</span>
+      </div>
+    </div>
+    <div class="top-center">
+      <div class="timeframe-bar" id="timeframeBar">
+        <button data-tf="1m">1m</button>
+        <button data-tf="5m">5m</button>
+        <button data-tf="15m">15m</button>
+        <button data-tf="1h">1H</button>
+        <button data-tf="4h">4H</button>
+        <button data-tf="1d" class="active">D</button>
+        <button data-tf="1wk">W</button>
+        <button data-tf="1mo">M</button>
+      </div>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" id="toggleLeftSidebar" title="Toggle Left Panel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      </button>
+      <button class="icon-btn" id="toggleRightSidebar" title="Toggle Indicators">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN LAYOUT ═══ -->
+  <main id="mainLayout">
+    <!-- LEFT SIDEBAR -->
+    <aside id="leftSidebar" class="sidebar left open">
+      <div class="sidebar-scroll">
+        <!-- Trend Analysis -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Trend Analysis
+          </h3>
+          <div id="trendPanel" class="trend-grid">
+            <div class="trend-loading">Loading trends…</div>
+          </div>
+        </section>
+
+        <!-- Stop Loss -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Risk Management
+          </h3>
+          <div class="sl-controls">
+            <div class="sl-row">
+              <label>Risk %</label>
+              <input type="number" id="riskPercent" value="2" min="0.1" max="50" step="0.1">
+            </div>
+            <div class="sl-row">
+              <label>Entry Price</label>
+              <input type="number" id="entryPrice" placeholder="Auto" step="any">
+            </div>
+            <div class="sl-row">
+              <label>Stop Loss</label>
+              <span id="slPrice" class="sl-value">—</span>
+            </div>
+            <div class="sl-row">
+              <label>SL Distance</label>
+              <span id="slDistance" class="sl-value">—</span>
+            </div>
+            <label class="toggle-row">
+              <input type="checkbox" id="slEnabled" checked>
+              <span class="toggle-label">Show SL Line</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Monday Range -->
+        <section class="panel" id="mondayRangePanel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Monday Range
+          </h3>
+          <div id="mondayRangeContent">
+            <div class="trend-loading">Loading…</div>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="mondayRangeEnabled" checked>
+            <span class="toggle-label">Show Monday Range</span>
+          </label>
+        </section>
+
+        <!-- Daily Ranges -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+            Daily Range History
+          </h3>
+          <div id="dailyRangesContent" class="daily-ranges-list">
+            <div class="trend-loading">Loading…</div>
+          </div>
+        </section>
+
+        <!-- Session HLOC -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Market Sessions
+          </h3>
+          <label class="toggle-row">
+            <input type="checkbox" id="londonSession">
+            <span class="toggle-label">London (9:00–17:30)</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" id="usSession">
+            <span class="toggle-label">US (15:30–22:00)</span>
+          </label>
+        </section>
+      </div>
+    </aside>
+
+    <!-- CHART AREA -->
+    <div id="chartContainer">
+      <div id="chart"></div>
+      <div id="chartOverlay" class="chart-overlay">
+        <div id="crosshairInfo" class="crosshair-info"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside id="rightSidebar" class="sidebar right open">
+      <div class="sidebar-scroll">
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            Indicators
+          </h3>
+
+          <!-- SMA -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma" class="ind-toggle">
+              <span class="toggle-label">SMA</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma-period" value="20" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma-color" value="#f5a623" class="ind-color">
+            </div>
+          </div>
+
+          <!-- EMA -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="ema" class="ind-toggle">
+              <span class="toggle-label">EMA</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="ema-period" value="21" min="1" max="500" class="ind-input">
+              <input type="color" data-param="ema-color" value="#7b61ff" class="ind-color">
+            </div>
+          </div>
+
+          <!-- SMA 200 -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma200" class="ind-toggle">
+              <span class="toggle-label">SMA 200</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma200-period" value="200" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma200-color" value="#e74c3c" class="ind-color">
+            </div>
+          </div>
+
+          <!-- RSI -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="rsi" class="ind-toggle">
+              <span class="toggle-label">RSI</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="rsi-period" value="14" min="1" max="100" class="ind-input">
+              <input type="color" data-param="rsi-color" value="#00d4aa" class="ind-color">
+            </div>
+          </div>
+
+          <!-- MACD -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="macd" class="ind-toggle">
+              <span class="toggle-label">MACD</span>
+            </label>
+            <div class="ind-settings">
+              <span class="ind-label">12/26/9</span>
+              <input type="color" data-param="macd-color" value="#2196F3" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Bollinger Bands -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="bb" class="ind-toggle">
+              <span class="toggle-label">Bollinger Bands</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="bb-period" value="20" min="1" max="200" class="ind-input">
+              <input type="color" data-param="bb-color" value="#9b59b6" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Volume -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="volume" class="ind-toggle" checked>
+              <span class="toggle-label">Volume</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Multi-Timeframe Overlay -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            Multi-Timeframe
+          </h3>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf1Enabled" class="mtf-toggle" data-mtf="1">
+              <span class="toggle-label">TF Overlay 1</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf1Select" class="mtf-select">
+                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+                <option value="1h" selected>1H</option><option value="4h">4H</option>
+                <option value="1d">D</option><option value="1wk">W</option><option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf1UpColor" value="#26a69a" class="ind-color" title="Up color">
+              <input type="color" id="mtf1DownColor" value="#ef5350" class="ind-color" title="Down color">
+            </div>
+          </div>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf2Enabled" class="mtf-toggle" data-mtf="2">
+              <span class="toggle-label">TF Overlay 2</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf2Select" class="mtf-select">
+                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+                <option value="1h">1H</option><option value="4h" selected>4H</option>
+                <option value="1d">D</option><option value="1wk">W</option><option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf2UpColor" value="#4fc3f7" class="ind-color" title="Up color">
+              <input type="color" id="mtf2DownColor" value="#ff7043" class="ind-color" title="Down color">
+            </div>
+          </div>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf3Enabled" class="mtf-toggle" data-mtf="3">
+              <span class="toggle-label">TF Overlay 3</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf3Select" class="mtf-select">
+                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+                <option value="1h">1H</option><option value="4h">4H</option>
+                <option value="1d" selected>D</option><option value="1wk">W</option><option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf3UpColor" value="#ab47bc" class="ind-color" title="Up color">
+              <input type="color" id="mtf3DownColor" value="#ffa726" class="ind-color" title="Down color">
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="indicators.js"></script>
+  <script src="chart.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
