@@ -1,6 +1,0 @@
-Aktiva: ['01 DNM', '02 DHM', '03 DHM neodpisovaný', '04 Nedokončený DM', '05 Zálohy na DM', '06 DFM', '07 Oprávky k DNM', '08 Oprávky k DHM', '09 Opravné položky k DM', '11 Materiál', '12 Zásoby vl. činnosti', '13 Zboží', '15 Zálohy na zásoby', '19 OP k zásobám', '21 Peníze', '22 Účty v bankách', '25 Krátkodobé CP', '26 Převody', '29 OP ke kr. FM', '31 Pohledávky', '33 Zúčt. se zaměstnanci', '34 Daně a dotace', '35 Pohl. za společníky', '37 Jiné pohledávky', '38 Přechodné účty', '39 OP k zúčt. vztahům']
-Náklady: ['50 Spotřebované nákupy', '51 Služby', '52 Osobní náklady', '53 Daně a poplatky', '54 Jiné provozní náklady', '55 Odpisy a OP', '56 Finanční náklady', '57 Rezervy a OP ve fin.', '58 Změna stavu zásob', '59 Daně z příjmů']
-Pasiva: ['23 Krátkodobé úvěry', '24 Krátkodobé fin. výpomoci', '32 Závazky', '33 Zúčt. se zaměstnanci', '34 Daně a dotace', '36 Záv. ke společníkům', '37 Jiné pohledávky', '38 Přechodné účty', '41 Základní kapitál', '42 Fondy', '43 HV', '45 Rezervy', '46 DL závazky', '47 DL závazky', '48 Odložený daňový záv.', '49 Individuální podnikatel']
-Podrozvahové: ['79 Podrozvahové účty']
-Výnosy: ['60 Tržby za vl. výkony a zboží', '64 Jiné provozní výnosy', '66 Finanční výnosy', '69 Převodové účty']
-Závěrkové: ['70 Účty rozvážné', '71 Účet zisků a ztrát']

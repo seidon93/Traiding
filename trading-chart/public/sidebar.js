@@ -112,10 +112,23 @@ const Sidebar = (() => {
         }
     }
 
+    function getActiveRangeMode() {
+        if (document.getElementById('rangeModePrice')?.classList.contains('active')) return 'price';
+        if (document.getElementById('rangeModeHL')?.classList.contains('active')) return 'hl';
+        return 'percent';
+    }
+
+    function setRangeMode(mode) {
+        document.getElementById('rangeModePercent').classList.toggle('active', mode === 'percent');
+        document.getElementById('rangeModePrice').classList.toggle('active', mode === 'price');
+        document.getElementById('rangeModeHL').classList.toggle('active', mode === 'hl');
+        renderDailyRanges();
+    }
+
     function renderDailyRanges() {
         if (!cachedRanges) return;
         const content = document.getElementById('dailyRangesContent');
-        const isPrice = document.getElementById('rangeModePrice') && document.getElementById('rangeModePrice').classList.contains('active');
+        const mode = getActiveRangeMode();
 
         const maxRange = Math.max(...cachedRanges.map(r => r.range));
         const last15 = cachedRanges.slice(-15).reverse();
@@ -124,13 +137,21 @@ const Sidebar = (() => {
         for (const r of last15) {
             const dateStr = new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
             const barPct = (r.range / maxRange * 100).toFixed(0);
-            const displayVal = isPrice ? ChartEngine.fmt(r.range) : `${r.rangePercent}%`;
-            html += `<div class="range-item">
+            let displayVal;
+            if (mode === 'price') {
+                displayVal = ChartEngine.fmt(r.high - r.low);
+            } else if (mode === 'hl') {
+                displayVal = `${ChartEngine.fmt(r.high)} – ${ChartEngine.fmt(r.low)}`;
+            } else {
+                displayVal = `${(((r.high - r.low) / r.low) * 100).toFixed(2)}%`;
+            }
+            const wideVal = mode === 'hl' ? ' style="min-width:120px;text-align:right"' : '';
+            html += `<div class="range-item${mode === 'hl' ? ' range-item-wide' : ''}">
           <span class="range-date">${dateStr}</span>
           <div class="range-bar-container">
             <div class="range-bar" style="width:${barPct}%"></div>
           </div>
-          <span class="range-val">${displayVal}</span>
+          <span class="range-val"${wideVal}>${displayVal}</span>
         </div>`;
         }
         content.innerHTML = html;
@@ -284,17 +305,10 @@ const Sidebar = (() => {
             ChartEngine.addIndicator('volume');
         }
 
-        // Daily Range mode toggle (% / $)
-        document.getElementById('rangeModePercent').addEventListener('click', () => {
-            document.getElementById('rangeModePercent').classList.add('active');
-            document.getElementById('rangeModePrice').classList.remove('active');
-            renderDailyRanges();
-        });
-        document.getElementById('rangeModePrice').addEventListener('click', () => {
-            document.getElementById('rangeModePrice').classList.add('active');
-            document.getElementById('rangeModePercent').classList.remove('active');
-            renderDailyRanges();
-        });
+        // Daily Range mode toggle (% / $ / H/L)
+        document.getElementById('rangeModePercent').addEventListener('click', () => setRangeMode('percent'));
+        document.getElementById('rangeModePrice').addEventListener('click', () => setRangeMode('price'));
+        document.getElementById('rangeModeHL').addEventListener('click', () => setRangeMode('hl'));
     }
 
     async function loadMTFOverlay(index, timeframe, upColor, downColor) {

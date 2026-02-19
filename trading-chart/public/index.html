@@ -1,25 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trading Chart Pro</title>
-  <meta name="description" content="Professional trading chart with real-time stock and crypto data, multi-timeframe analysis, and technical indicators">
+  <meta name="description"
+    content="Professional trading chart with real-time stock and crypto data, multi-timeframe analysis, and technical indicators">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <!-- ═══ TOP BAR ═══ -->
   <header id="topBar">
     <div class="top-left">
       <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 17l4-4 4 4 6-8 4 4" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="3" y1="17" x2="21" y2="9"><stop stop-color="#00d4aa"/><stop offset="1" stop-color="#7b61ff"/></linearGradient></defs></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M3 17l4-4 4 4 6-8 4 4" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <defs>
+            <linearGradient id="g1" x1="3" y1="17" x2="21" y2="9">
+              <stop stop-color="#00d4aa" />
+              <stop offset="1" stop-color="#7b61ff" />
+            </linearGradient>
+          </defs>
+        </svg>
         <span>TradePro</span>
       </div>
       <div class="search-container">
-        <input type="text" id="tickerInput" placeholder="Search ticker... (AAPL, BTCUSDT)" autocomplete="off" spellcheck="false">
+        <input type="text" id="tickerInput" placeholder="Search ticker... (AAPL, BTCUSDT)" autocomplete="off"
+          spellcheck="false">
         <div id="searchResults" class="search-results"></div>
       </div>
       <div class="ticker-info" id="tickerInfo">
@@ -43,10 +58,16 @@
     </div>
     <div class="top-right">
       <button class="icon-btn" id="toggleLeftSidebar" title="Toggle Left Panel">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+        </svg>
       </button>
       <button class="icon-btn" id="toggleRightSidebar" title="Toggle Indicators">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="15" y1="3" x2="15" y2="21" />
+        </svg>
       </button>
     </div>
   </header>
@@ -59,7 +80,10 @@
         <!-- Trend Analysis -->
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
             Trend Analysis
           </h3>
           <div id="trendPanel" class="trend-grid">
@@ -70,7 +94,9 @@
         <!-- Stop Loss -->
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             Risk Management
           </h3>
           <div class="sl-controls">
@@ -100,7 +126,12 @@
         <!-- Monday Range -->
         <section class="panel" id="mondayRangePanel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
             Monday Range
           </h3>
           <div id="mondayRangeContent">
@@ -115,12 +146,18 @@
         <!-- Daily Ranges -->
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="17" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="17" y1="18" x2="3" y2="18" />
+            </svg>
             Daily Range History
           </h3>
           <div class="range-mode-toggle">
             <button id="rangeModePercent" class="range-mode-btn active">%</button>
             <button id="rangeModePrice" class="range-mode-btn">$</button>
+            <button id="rangeModeHL" class="range-mode-btn">H/L</button>
           </div>
           <div id="dailyRangesContent" class="daily-ranges-list">
             <div class="trend-loading">Loading…</div>
@@ -130,7 +167,10 @@
         <!-- Session HLOC -->
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
             Market Sessions
           </h3>
           <label class="toggle-row">
@@ -158,7 +198,10 @@
       <div class="sidebar-scroll">
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+              <path d="M22 12A10 10 0 0 0 12 2v10z" />
+            </svg>
             Indicators
           </h3>
 
@@ -246,7 +289,10 @@
         <!-- Multi-Timeframe Overlay -->
         <section class="panel">
           <h3 class="panel-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+              <polyline points="17 2 12 7 7 2" />
+            </svg>
             Multi-Timeframe
           </h3>
 
@@ -257,9 +303,14 @@
             </label>
             <div class="ind-settings">
               <select id="mtf1Select" class="mtf-select">
-                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
-                <option value="1h" selected>1H</option><option value="4h">4H</option>
-                <option value="1d">D</option><option value="1wk">W</option><option value="1mo">M</option>
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h" selected>1H</option>
+                <option value="4h">4H</option>
+                <option value="1d">D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
               </select>
               <input type="color" id="mtf1UpColor" value="#26a69a" class="ind-color" title="Up color">
               <input type="color" id="mtf1DownColor" value="#ef5350" class="ind-color" title="Down color">
@@ -273,9 +324,14 @@
             </label>
             <div class="ind-settings">
               <select id="mtf2Select" class="mtf-select">
-                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
-                <option value="1h">1H</option><option value="4h" selected>4H</option>
-                <option value="1d">D</option><option value="1wk">W</option><option value="1mo">M</option>
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1H</option>
+                <option value="4h" selected>4H</option>
+                <option value="1d">D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
               </select>
               <input type="color" id="mtf2UpColor" value="#4fc3f7" class="ind-color" title="Up color">
               <input type="color" id="mtf2DownColor" value="#ff7043" class="ind-color" title="Down color">
@@ -289,9 +345,14 @@
             </label>
             <div class="ind-settings">
               <select id="mtf3Select" class="mtf-select">
-                <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
-                <option value="1h">1H</option><option value="4h">4H</option>
-                <option value="1d" selected>D</option><option value="1wk">W</option><option value="1mo">M</option>
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1H</option>
+                <option value="4h">4H</option>
+                <option value="1d" selected>D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
               </select>
               <input type="color" id="mtf3UpColor" value="#ab47bc" class="ind-color" title="Up color">
               <input type="color" id="mtf3DownColor" value="#ffa726" class="ind-color" title="Down color">
@@ -308,4 +369,5 @@
   <script src="sidebar.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

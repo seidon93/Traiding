@@ -1,4 +1,0 @@
-Rows for 2024-06: 400
-Total Plan: 98,476,614
-Total Actual: 98,773,907
-Total Variance: 297,293
