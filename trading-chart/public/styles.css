@@ -438,6 +438,36 @@ input, select, button { font-family: inherit; font-size: inherit; }
 }
 .range-item .range-val { text-align: right; font-family: var(--font-mono); color: var(--text-secondary); }
 
+/* ─── RANGE MODE TOGGLE ─────────────────────────────────── */
+.range-mode-toggle {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 2px;
+  width: fit-content;
+}
+
+.range-mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 3px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  transition: all var(--transition-fast);
+}
+
+.range-mode-btn:hover { color: var(--text-primary); }
+.range-mode-btn.active {
+  color: var(--bg-primary);
+  background: var(--accent-primary);
+}
+
 /* ─── MONDAY RANGE ──────────────────────────────────────── */
 .monday-info {
   display: flex;

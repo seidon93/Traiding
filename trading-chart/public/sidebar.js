@@ -91,6 +91,8 @@ const Sidebar = (() => {
     }
 
     // ─── Daily Ranges ─────────────────────────────────────
+    let cachedRanges = null;
+
     async function updateDailyRanges(symbol) {
         const content = document.getElementById('dailyRangesContent');
         content.innerHTML = '<div class="trend-loading">Loading…</div>';
@@ -99,29 +101,39 @@ const Sidebar = (() => {
             const ranges = await DataService.getDailyRanges(symbol);
             if (!ranges || ranges.length === 0) {
                 content.innerHTML = '<div class="trend-loading">No data</div>';
+                cachedRanges = null;
                 return;
             }
+            cachedRanges = ranges;
+            renderDailyRanges();
+        } catch (e) {
+            content.innerHTML = '<div class="trend-loading">Failed to load</div>';
+            cachedRanges = null;
+        }
+    }
 
-            // Find max range for bar scaling
-            const maxRange = Math.max(...ranges.map(r => r.range));
-            const last15 = ranges.slice(-15).reverse();
+    function renderDailyRanges() {
+        if (!cachedRanges) return;
+        const content = document.getElementById('dailyRangesContent');
+        const isPrice = document.getElementById('rangeModePrice') && document.getElementById('rangeModePrice').classList.contains('active');
 
-            let html = '';
-            for (const r of last15) {
-                const dateStr = new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-                const barPct = (r.range / maxRange * 100).toFixed(0);
-                html += `<div class="range-item">
+        const maxRange = Math.max(...cachedRanges.map(r => r.range));
+        const last15 = cachedRanges.slice(-15).reverse();
+
+        let html = '';
+        for (const r of last15) {
+            const dateStr = new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            const barPct = (r.range / maxRange * 100).toFixed(0);
+            const displayVal = isPrice ? ChartEngine.fmt(r.range) : `${r.rangePercent}%`;
+            html += `<div class="range-item">
           <span class="range-date">${dateStr}</span>
           <div class="range-bar-container">
             <div class="range-bar" style="width:${barPct}%"></div>
           </div>
-          <span class="range-val">${r.rangePercent}%</span>
+          <span class="range-val">${displayVal}</span>
         </div>`;
-            }
-            content.innerHTML = html;
-        } catch (e) {
-            content.innerHTML = '<div class="trend-loading">Failed to load</div>';
         }
+        content.innerHTML = html;
     }
 
     // ─── Stop Loss Logic ──────────────────────────────────
@@ -271,6 +283,18 @@ const Sidebar = (() => {
         if (volToggle && volToggle.checked) {
             ChartEngine.addIndicator('volume');
         }
+
+        // Daily Range mode toggle (% / $)
+        document.getElementById('rangeModePercent').addEventListener('click', () => {
+            document.getElementById('rangeModePercent').classList.add('active');
+            document.getElementById('rangeModePrice').classList.remove('active');
+            renderDailyRanges();
+        });
+        document.getElementById('rangeModePrice').addEventListener('click', () => {
+            document.getElementById('rangeModePrice').classList.add('active');
+            document.getElementById('rangeModePercent').classList.remove('active');
+            renderDailyRanges();
+        });
     }
 
     async function loadMTFOverlay(index, timeframe, upColor, downColor) {
