@@ -628,6 +628,25 @@ button {
   background: var(--accent-primary);
 }
 
+/* ─── RANGE CHART CONTROLS ──────────────────────────────── */
+.range-chart-controls {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.range-chart-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.range-chart-settings label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ─── MONDAY RANGE ──────────────────────────────────────── */
 .monday-info {
   display: flex;

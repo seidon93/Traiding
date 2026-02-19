@@ -115,6 +115,7 @@ const Sidebar = (() => {
     function getActiveRangeMode() {
         if (document.getElementById('rangeModePrice')?.classList.contains('active')) return 'price';
         if (document.getElementById('rangeModeHL')?.classList.contains('active')) return 'hl';
+        if (document.getElementById('rangeModeOC')?.classList.contains('active')) return 'oc';
         return 'percent';
     }
 
@@ -122,6 +123,7 @@ const Sidebar = (() => {
         document.getElementById('rangeModePercent').classList.toggle('active', mode === 'percent');
         document.getElementById('rangeModePrice').classList.toggle('active', mode === 'price');
         document.getElementById('rangeModeHL').classList.toggle('active', mode === 'hl');
+        document.getElementById('rangeModeOC').classList.toggle('active', mode === 'oc');
         renderDailyRanges();
     }
 
@@ -142,10 +144,14 @@ const Sidebar = (() => {
                 displayVal = ChartEngine.fmt(r.high - r.low);
             } else if (mode === 'hl') {
                 displayVal = `${ChartEngine.fmt(r.high)} – ${ChartEngine.fmt(r.low)}`;
+            } else if (mode === 'oc') {
+                const diff = r.close - r.open;
+                const sign = diff >= 0 ? '+' : '';
+                displayVal = `${sign}${ChartEngine.fmt(diff)}`;
             } else {
                 displayVal = `${(((r.high - r.low) / r.low) * 100).toFixed(2)}%`;
             }
-            const wideVal = mode === 'hl' ? ' style="min-width:120px;text-align:right"' : '';
+            const wideVal = (mode === 'hl' || mode === 'oc') ? ' style="min-width:120px;text-align:right"' : '';
             html += `<div class="range-item${mode === 'hl' ? ' range-item-wide' : ''}">
           <span class="range-date">${dateStr}</span>
           <div class="range-bar-container">
@@ -305,10 +311,29 @@ const Sidebar = (() => {
             ChartEngine.addIndicator('volume');
         }
 
-        // Daily Range mode toggle (% / $ / H/L)
+        // Daily Range mode toggle (% / $ / H/L / O/C)
         document.getElementById('rangeModePercent').addEventListener('click', () => setRangeMode('percent'));
         document.getElementById('rangeModePrice').addEventListener('click', () => setRangeMode('price'));
         document.getElementById('rangeModeHL').addEventListener('click', () => setRangeMode('hl'));
+        document.getElementById('rangeModeOC').addEventListener('click', () => setRangeMode('oc'));
+
+        // Daily Range chart overlay
+        const rangeChartToggle = document.getElementById('rangeChartEnabled');
+        const rangeChartDays = document.getElementById('rangeChartDays');
+        const rangeChartColor = document.getElementById('rangeChartColor');
+
+        const handleRangeChart = () => {
+            if (rangeChartToggle.checked && cachedRanges) {
+                const days = parseInt(rangeChartDays.value) || 5;
+                ChartEngine.addDailyRangeOverlay(cachedRanges, days, rangeChartColor.value);
+            } else {
+                ChartEngine.clearDailyRangeOverlay();
+            }
+        };
+
+        rangeChartToggle.addEventListener('change', handleRangeChart);
+        rangeChartDays.addEventListener('change', handleRangeChart);
+        rangeChartColor.addEventListener('change', handleRangeChart);
     }
 
     async function loadMTFOverlay(index, timeframe, upColor, downColor) {

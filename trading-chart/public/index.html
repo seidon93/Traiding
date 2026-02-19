@@ -158,9 +158,21 @@
             <button id="rangeModePercent" class="range-mode-btn active">%</button>
             <button id="rangeModePrice" class="range-mode-btn">$</button>
             <button id="rangeModeHL" class="range-mode-btn">H/L</button>
+            <button id="rangeModeOC" class="range-mode-btn">O/C</button>
           </div>
           <div id="dailyRangesContent" class="daily-ranges-list">
             <div class="trend-loading">Loading…</div>
+          </div>
+          <div class="range-chart-controls">
+            <label class="toggle-row">
+              <input type="checkbox" id="rangeChartEnabled">
+              <span class="toggle-label">Show on Chart</span>
+            </label>
+            <div class="range-chart-settings">
+              <label>Days</label>
+              <input type="number" id="rangeChartDays" value="5" min="1" max="30" class="ind-input">
+              <input type="color" id="rangeChartColor" value="#7b61ff" class="ind-color">
+            </div>
           </div>
         </section>
 

@@ -448,6 +448,93 @@ const ChartEngine = (() => {
         }
     }
 
+    // ─── Daily Range Overlay ───────────────────────────────
+    const dailyRangeAreas = [];
+
+    function addDailyRangeOverlay(ranges, days, color) {
+        clearDailyRangeOverlay();
+        if (!ranges || ranges.length === 0 || !candleData.length) return;
+
+        const lastN = ranges.slice(-days);
+        // Parse hex color to rgba with low opacity for fill
+        const fillColor = color + '1a'; // ~10% opacity
+        const borderColor = color + '55'; // ~33% opacity
+
+        for (const day of lastN) {
+            const dayDate = new Date(day.date);
+            const dayStart = dayDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+            // Find candles that belong to this day
+            const dayCandles = candleData.filter(c => {
+                const cd = new Date(c.time * 1000);
+                return cd.getUTCFullYear() === dayDate.getUTCFullYear() &&
+                    cd.getUTCMonth() === dayDate.getUTCMonth() &&
+                    cd.getUTCDate() === dayDate.getUTCDate();
+            });
+
+            if (dayCandles.length === 0) {
+                // For daily+ TF, find the candle matching this date
+                const matchCandle = candleData.find(c => {
+                    const cd = new Date(c.time * 1000);
+                    return cd.getUTCFullYear() === dayDate.getUTCFullYear() &&
+                        cd.getUTCMonth() === dayDate.getUTCMonth() &&
+                        cd.getUTCDate() === dayDate.getUTCDate();
+                });
+                if (!matchCandle) continue;
+                // Single candle: draw two horizontal price lines at high and low
+                const hiLine = mainSeries.createPriceLine({
+                    price: day.high, color: borderColor, lineWidth: 1,
+                    lineStyle: LightweightCharts.LineStyle.Dotted,
+                    axisLabelVisible: false, title: '', lineVisible: true
+                });
+                const loLine = mainSeries.createPriceLine({
+                    price: day.low, color: borderColor, lineWidth: 1,
+                    lineStyle: LightweightCharts.LineStyle.Dotted,
+                    axisLabelVisible: false, title: '', lineVisible: true
+                });
+                dailyRangeAreas.push({ type: 'lines', hi: hiLine, lo: loLine });
+                continue;
+            }
+
+            // Create area between high and low using two line series
+            const topData = dayCandles.map(c => ({ time: c.time, value: day.high }));
+            const botData = dayCandles.map(c => ({ time: c.time, value: day.low }));
+
+            const topSeries = chart.addLineSeries({
+                color: borderColor, lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dotted,
+                priceScaleId: 'right',
+                lastValueVisible: false, priceLineVisible: false,
+                crosshairMarkerVisible: false
+            });
+
+            const botSeries = chart.addLineSeries({
+                color: borderColor, lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dotted,
+                priceScaleId: 'right',
+                lastValueVisible: false, priceLineVisible: false,
+                crosshairMarkerVisible: false
+            });
+
+            topSeries.setData(topData);
+            botSeries.setData(botData);
+            dailyRangeAreas.push({ type: 'series', top: topSeries, bot: botSeries });
+        }
+    }
+
+    function clearDailyRangeOverlay() {
+        for (const area of dailyRangeAreas) {
+            if (area.type === 'series') {
+                try { chart.removeSeries(area.top); } catch (e) { }
+                try { chart.removeSeries(area.bot); } catch (e) { }
+            } else if (area.type === 'lines') {
+                try { mainSeries.removePriceLine(area.hi); } catch (e) { }
+                try { mainSeries.removePriceLine(area.lo); } catch (e) { }
+            }
+        }
+        dailyRangeAreas.length = 0;
+    }
+
     // ─── Resize ────────────────────────────────────────────
     function resize() {
         const container = document.getElementById('chart');
@@ -463,6 +550,7 @@ const ChartEngine = (() => {
         addSessionMarkers, clearSessionMarkers,
         addIndicator, removeIndicator,
         addMTFOverlay, removeMTFOverlay,
+        addDailyRangeOverlay, clearDailyRangeOverlay,
         getIndicatorParams, fmt
     };
 })();
