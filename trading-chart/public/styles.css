@@ -686,6 +686,242 @@ button {
   gap: 4px 12px;
 }
 
+/* ─── PREDICTION PANEL ──────────────────────────────────── */
+.prediction-btn {
+  width: 100%;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent-primary), #7b61ff);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.prediction-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+}
+
+.prediction-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.prediction-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 2px;
+  margin-bottom: 10px;
+}
+
+.pred-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 11px;
+  transition: all var(--transition-fast);
+}
+
+.pred-tab:hover {
+  color: var(--text-primary);
+}
+
+.pred-tab.active {
+  color: var(--bg-primary);
+  background: var(--accent-primary);
+}
+
+.prediction-content {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.pred-consensus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.pred-consensus .consensus-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.pred-consensus .consensus-label.bull {
+  color: var(--candle-up);
+}
+
+.pred-consensus .consensus-label.bear {
+  color: var(--candle-down);
+}
+
+.pred-consensus .consensus-label.neutral {
+  color: var(--text-muted);
+}
+
+.confidence-bar {
+  width: 60px;
+  height: 6px;
+  background: var(--bg-primary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.pred-tf-breakdown {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.pred-tf-chip {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.pred-tf-chip.bull {
+  color: var(--candle-up);
+  background: var(--candle-up-light);
+}
+
+.pred-tf-chip.bear {
+  color: var(--candle-down);
+  background: var(--candle-down-light);
+}
+
+.pred-direction {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.pred-direction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pred-direction-header.long {
+  background: rgba(38, 166, 154, 0.12);
+  color: var(--candle-up);
+}
+
+.pred-direction-header.short {
+  background: rgba(239, 83, 80, 0.12);
+  color: var(--candle-down);
+}
+
+.pred-direction-header .rr-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  opacity: 0.7;
+}
+
+.pred-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.pred-row:nth-child(even) {
+  background: var(--bg-tertiary);
+}
+
+.pred-row .pred-label {
+  color: var(--text-muted);
+}
+
+.pred-row .pred-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.pred-row .pred-value.entry {
+  color: var(--text-primary);
+}
+
+.pred-row .pred-value.target {
+  color: var(--candle-up);
+}
+
+.pred-row .pred-value.sl {
+  color: var(--candle-down);
+}
+
+.pred-row .pred-value.target-short {
+  color: var(--candle-down);
+}
+
+.pred-row .pred-value.sl-short {
+  color: var(--candle-up);
+}
+
+.pred-sr {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  font-size: 11px;
+}
+
+.pred-sr .sr-label {
+  color: var(--text-muted);
+}
+
+.pred-sr .sr-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.prediction-controls {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.pred-slider {
+  width: 80px;
+  height: 4px;
+  accent-color: var(--accent-primary);
+}
+
 /* ─── MONDAY RANGE ──────────────────────────────────────── */
 .monday-info {
   display: flex;
