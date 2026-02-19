@@ -660,12 +660,23 @@ button {
   padding-bottom: 0;
 }
 
-.session-label {
-  display: block;
-  font-size: 11px;
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.session-name {
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 6px;
+}
+
+.session-time {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
 }
 
 .session-controls {

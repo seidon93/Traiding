@@ -151,7 +151,7 @@ const Sidebar = (() => {
             } else {
                 displayVal = `${(((r.high - r.low) / r.low) * 100).toFixed(2)}%`;
             }
-            const wideVal = (mode === 'hl' || mode === 'oc') ? ' style="min-width:120px;text-align:right"' : '';
+            const wideVal = (mode === 'hl') ? ' style="min-width:120px;text-align:right"' : '';
             html += `<div class="range-item${mode === 'hl' ? ' range-item-wide' : ''}">
           <span class="range-date">${dateStr}</span>
           <div class="range-bar-container">
