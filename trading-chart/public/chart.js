@@ -287,6 +287,103 @@ const ChartEngine = (() => {
         }
     }
 
+    // ─── Session Range Areas ──────────────────────────────
+    const sessionRangeSeries = { london: [], us: [] };
+
+    function getSessionConfig(sessionType) {
+        return sessionType === 'london'
+            ? { startHour: 9, startMin: 0, endHour: 17, endMin: 30 }
+            : { startHour: 15, startMin: 30, endHour: 22, endMin: 0 };
+    }
+
+    function addSessionRange(candles, sessionType, color) {
+        clearSessionRange(sessionType);
+        if (!candles || candles.length === 0) return;
+
+        const sess = getSessionConfig(sessionType);
+        const fillColor = color + '30'; // ~19% opacity fill
+        const borderColor = color + '66'; // ~40% opacity border
+
+        // Group candles by day into session periods
+        const dayGroups = {};
+        for (const c of candles) {
+            const d = new Date(c.time * 1000);
+            const h = d.getUTCHours() + d.getUTCMinutes() / 60;
+            const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+
+            if (h >= sess.startHour + sess.startMin / 60 && h < sess.endHour + sess.endMin / 60) {
+                if (!dayGroups[dayKey]) {
+                    dayGroups[dayKey] = { high: c.high, low: c.low, candles: [c] };
+                } else {
+                    dayGroups[dayKey].high = Math.max(dayGroups[dayKey].high, c.high);
+                    dayGroups[dayKey].low = Math.min(dayGroups[dayKey].low, c.low);
+                    dayGroups[dayKey].candles.push(c);
+                }
+            }
+        }
+
+        for (const [, g] of Object.entries(dayGroups)) {
+            if (g.candles.length === 0) continue;
+
+            const midPrice = (g.high + g.low) / 2;
+
+            // Use a baseline series: baseValue at midPrice, fill above up to high, fill below down to low
+            const baselineSeries = chart.addBaselineSeries({
+                baseValue: { type: 'price', price: midPrice },
+                topLineColor: borderColor,
+                topFillColor1: fillColor,
+                topFillColor2: fillColor,
+                bottomLineColor: borderColor,
+                bottomFillColor1: fillColor,
+                bottomFillColor2: fillColor,
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dotted,
+                priceScaleId: 'right',
+                lastValueVisible: false,
+                priceLineVisible: false,
+                crosshairMarkerVisible: false
+            });
+
+            // Alternate between high and low to fill the whole area
+            const data = [];
+            for (const c of g.candles) {
+                data.push({ time: c.time, value: g.high });
+            }
+            // Add low points traveling backwards to fill area
+            // Since baseline fills from line to baseValue, we use two series
+            baselineSeries.setData(data);
+            sessionRangeSeries[sessionType].push(baselineSeries);
+
+            // Second series for the bottom half (from midPrice down to low)
+            const baselineSeries2 = chart.addBaselineSeries({
+                baseValue: { type: 'price', price: midPrice },
+                topLineColor: 'transparent',
+                topFillColor1: 'transparent',
+                topFillColor2: 'transparent',
+                bottomLineColor: borderColor,
+                bottomFillColor1: fillColor,
+                bottomFillColor2: fillColor,
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dotted,
+                priceScaleId: 'right',
+                lastValueVisible: false,
+                priceLineVisible: false,
+                crosshairMarkerVisible: false
+            });
+
+            const data2 = g.candles.map(c => ({ time: c.time, value: g.low }));
+            baselineSeries2.setData(data2);
+            sessionRangeSeries[sessionType].push(baselineSeries2);
+        }
+    }
+
+    function clearSessionRange(sessionType) {
+        for (const s of sessionRangeSeries[sessionType]) {
+            try { chart.removeSeries(s); } catch (e) { }
+        }
+        sessionRangeSeries[sessionType] = [];
+    }
+
     // ─── Indicators ────────────────────────────────────────
     function addIndicator(name, params = {}) {
         removeIndicator(name);
@@ -548,6 +645,7 @@ const ChartEngine = (() => {
         setCurrentPriceLine, setSLPriceLine, removeSLLine,
         setMondayRange, clearMondayRange,
         addSessionMarkers, clearSessionMarkers,
+        addSessionRange, clearSessionRange,
         addIndicator, removeIndicator,
         addMTFOverlay, removeMTFOverlay,
         addDailyRangeOverlay, clearDailyRangeOverlay,

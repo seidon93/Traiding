@@ -647,6 +647,34 @@ button {
   color: var(--text-muted);
 }
 
+/* ─── SESSION GROUPS ────────────────────────────────────── */
+.session-group {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.session-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.session-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.session-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
 /* ─── MONDAY RANGE ──────────────────────────────────────── */
 .monday-info {
   display: flex;

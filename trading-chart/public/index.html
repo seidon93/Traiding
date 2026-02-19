@@ -117,7 +117,7 @@
               <span id="slDistance" class="sl-value">—</span>
             </div>
             <label class="toggle-row">
-              <input type="checkbox" id="slEnabled" checked>
+              <input type="checkbox" id="slEnabled">
               <span class="toggle-label">Show SL Line</span>
             </label>
           </div>
@@ -138,7 +138,7 @@
             <div class="trend-loading">Loading…</div>
           </div>
           <label class="toggle-row">
-            <input type="checkbox" id="mondayRangeEnabled" checked>
+            <input type="checkbox" id="mondayRangeEnabled">
             <span class="toggle-label">Show Monday Range</span>
           </label>
         </section>
@@ -185,14 +185,36 @@
             </svg>
             Market Sessions
           </h3>
-          <label class="toggle-row">
-            <input type="checkbox" id="londonSession">
-            <span class="toggle-label">London (9:00–17:30)</span>
-          </label>
-          <label class="toggle-row">
-            <input type="checkbox" id="usSession">
-            <span class="toggle-label">US (15:30–22:00)</span>
-          </label>
+
+          <div class="session-group">
+            <span class="session-label">London (9:00–17:30)</span>
+            <div class="session-controls">
+              <label class="toggle-row">
+                <input type="checkbox" id="londonSession">
+                <span class="toggle-label">HLOC Markers</span>
+              </label>
+              <label class="toggle-row">
+                <input type="checkbox" id="londonRange">
+                <span class="toggle-label">Range Area</span>
+              </label>
+              <input type="color" id="londonRangeColor" value="#4fc3f7" class="ind-color" title="London range color">
+            </div>
+          </div>
+
+          <div class="session-group">
+            <span class="session-label">US (15:30–22:00)</span>
+            <div class="session-controls">
+              <label class="toggle-row">
+                <input type="checkbox" id="usSession">
+                <span class="toggle-label">HLOC Markers</span>
+              </label>
+              <label class="toggle-row">
+                <input type="checkbox" id="usRange">
+                <span class="toggle-label">Range Area</span>
+              </label>
+              <input type="color" id="usRangeColor" value="#ff7043" class="ind-color" title="US range color">
+            </div>
+          </div>
         </section>
       </div>
     </aside>

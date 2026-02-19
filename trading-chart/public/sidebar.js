@@ -147,7 +147,7 @@ const Sidebar = (() => {
             } else if (mode === 'oc') {
                 const diff = r.close - r.open;
                 const sign = diff >= 0 ? '+' : '';
-                displayVal = `${sign}${ChartEngine.fmt(diff)}`;
+                displayVal = `${sign}${diff.toFixed(2)}`;
             } else {
                 displayVal = `${(((r.high - r.low) / r.low) * 100).toFixed(2)}%`;
             }
@@ -256,6 +256,31 @@ const Sidebar = (() => {
                 ChartEngine.clearSessionMarkers('us');
             }
         });
+
+        // Session range area toggles
+        const handleLondonRange = () => {
+            const enabled = document.getElementById('londonRange').checked;
+            if (enabled) {
+                const color = document.getElementById('londonRangeColor').value;
+                ChartEngine.addSessionRange(ChartEngine.getData(), 'london', color);
+            } else {
+                ChartEngine.clearSessionRange('london');
+            }
+        };
+        document.getElementById('londonRange').addEventListener('change', handleLondonRange);
+        document.getElementById('londonRangeColor').addEventListener('change', handleLondonRange);
+
+        const handleUSRange = () => {
+            const enabled = document.getElementById('usRange').checked;
+            if (enabled) {
+                const color = document.getElementById('usRangeColor').value;
+                ChartEngine.addSessionRange(ChartEngine.getData(), 'us', color);
+            } else {
+                ChartEngine.clearSessionRange('us');
+            }
+        };
+        document.getElementById('usRange').addEventListener('change', handleUSRange);
+        document.getElementById('usRangeColor').addEventListener('change', handleUSRange);
 
         // Indicator toggles
         document.querySelectorAll('.ind-toggle').forEach(toggle => {
