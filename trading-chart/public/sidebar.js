@@ -346,11 +346,15 @@ const Sidebar = (() => {
         const rangeChartToggle = document.getElementById('rangeChartEnabled');
         const rangeChartDays = document.getElementById('rangeChartDays');
         const rangeChartColor = document.getElementById('rangeChartColor');
+        const rangeChartLineStyle = document.getElementById('rangeChartLineStyle');
+        const rangeChartLineWidth = document.getElementById('rangeChartLineWidth');
 
         const handleRangeChart = () => {
             if (rangeChartToggle.checked && cachedRanges) {
                 const days = parseInt(rangeChartDays.value) || 5;
-                ChartEngine.addDailyRangeOverlay(cachedRanges, days, rangeChartColor.value);
+                const lw = parseInt(rangeChartLineWidth.value) || 2;
+                const ls = parseInt(rangeChartLineStyle.value);
+                ChartEngine.addDailyRangeOverlay(cachedRanges, days, rangeChartColor.value, lw, ls);
             } else {
                 ChartEngine.clearDailyRangeOverlay();
             }
@@ -359,6 +363,8 @@ const Sidebar = (() => {
         rangeChartToggle.addEventListener('change', handleRangeChart);
         rangeChartDays.addEventListener('change', handleRangeChart);
         rangeChartColor.addEventListener('change', handleRangeChart);
+        rangeChartLineStyle.addEventListener('change', handleRangeChart);
+        rangeChartLineWidth.addEventListener('change', handleRangeChart);
     }
 
     async function loadMTFOverlay(index, timeframe, upColor, downColor) {

@@ -548,18 +548,18 @@ const ChartEngine = (() => {
     // ─── Daily Range Overlay ───────────────────────────────
     const dailyRangeAreas = [];
 
-    function addDailyRangeOverlay(ranges, days, color) {
+    function addDailyRangeOverlay(ranges, days, color, lineWidth, lineStyle) {
         clearDailyRangeOverlay();
         if (!ranges || ranges.length === 0 || !candleData.length) return;
 
+        const lw = lineWidth || 2;
+        const ls = lineStyle != null ? lineStyle : LightweightCharts.LineStyle.Dotted;
+
         const lastN = ranges.slice(-days);
-        // Parse hex color to rgba with low opacity for fill
-        const fillColor = color + '1a'; // ~10% opacity
-        const borderColor = color + '55'; // ~33% opacity
+        const borderColor = color + '88'; // ~53% opacity
 
         for (const day of lastN) {
             const dayDate = new Date(day.date);
-            const dayStart = dayDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
             // Find candles that belong to this day
             const dayCandles = candleData.filter(c => {
@@ -578,15 +578,14 @@ const ChartEngine = (() => {
                         cd.getUTCDate() === dayDate.getUTCDate();
                 });
                 if (!matchCandle) continue;
-                // Single candle: draw two horizontal price lines at high and low
                 const hiLine = mainSeries.createPriceLine({
-                    price: day.high, color: borderColor, lineWidth: 1,
-                    lineStyle: LightweightCharts.LineStyle.Dotted,
+                    price: day.high, color: borderColor, lineWidth: lw,
+                    lineStyle: ls,
                     axisLabelVisible: false, title: '', lineVisible: true
                 });
                 const loLine = mainSeries.createPriceLine({
-                    price: day.low, color: borderColor, lineWidth: 1,
-                    lineStyle: LightweightCharts.LineStyle.Dotted,
+                    price: day.low, color: borderColor, lineWidth: lw,
+                    lineStyle: ls,
                     axisLabelVisible: false, title: '', lineVisible: true
                 });
                 dailyRangeAreas.push({ type: 'lines', hi: hiLine, lo: loLine });
@@ -598,16 +597,16 @@ const ChartEngine = (() => {
             const botData = dayCandles.map(c => ({ time: c.time, value: day.low }));
 
             const topSeries = chart.addLineSeries({
-                color: borderColor, lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dotted,
+                color: borderColor, lineWidth: lw,
+                lineStyle: ls,
                 priceScaleId: 'right',
                 lastValueVisible: false, priceLineVisible: false,
                 crosshairMarkerVisible: false
             });
 
             const botSeries = chart.addLineSeries({
-                color: borderColor, lineWidth: 1,
-                lineStyle: LightweightCharts.LineStyle.Dotted,
+                color: borderColor, lineWidth: lw,
+                lineStyle: ls,
                 priceScaleId: 'right',
                 lastValueVisible: false, priceLineVisible: false,
                 crosshairMarkerVisible: false
