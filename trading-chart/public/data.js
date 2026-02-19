@@ -68,7 +68,8 @@ const DataService = (() => {
     }
 
     async function getDailyRanges(symbol) {
-        return fetchJSON('/api/daily-ranges', { symbol });
+        const type = isCrypto(symbol) ? 'crypto' : 'stock';
+        return fetchJSON('/api/daily-ranges', { symbol, type });
     }
 
     return { getCandles, getQuote, searchTicker, getMondayRange, getTrend, getDailyRanges, isCrypto };

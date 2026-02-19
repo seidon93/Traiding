@@ -353,10 +353,33 @@ app.get('/api/trend', async (req, res) => {
 
 // ─── Daily ranges history ───────────────────────────────────────────
 app.get('/api/daily-ranges', async (req, res) => {
-  const { symbol } = req.query;
+  const { symbol, type = 'stock' } = req.query;
   if (!symbol) return res.status(400).json({ error: 'symbol required' });
 
   try {
+    if (type === 'crypto') {
+      // Binance daily klines
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol.toUpperCase()}&interval=1d&limit=30`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.code) throw new Error(data.msg || 'Binance API error');
+
+      const ranges = data.map(k => {
+        const o = parseFloat(k[1]);
+        const h = parseFloat(k[2]);
+        const l = parseFloat(k[3]);
+        const c = parseFloat(k[4]);
+        return {
+          date: new Date(k[0]).toISOString(),
+          open: o, high: h, low: l, close: c,
+          range: h - l,
+          rangePercent: ((h - l) / l * 100).toFixed(2)
+        };
+      });
+      return res.json(ranges);
+    }
+
+    // Stock daily ranges via Yahoo Finance
     const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1mo&includePrePost=false`;
     const data = await yfFetch(url);
 
@@ -375,10 +398,7 @@ app.get('/api/daily-ranges', async (req, res) => {
       if (o == null || h == null || l == null || c == null) continue;
       ranges.push({
         date: new Date(timestamps[i] * 1000).toISOString(),
-        open: o,
-        high: h,
-        low: l,
-        close: c,
+        open: o, high: h, low: l, close: c,
         range: h - l,
         rangePercent: ((h - l) / l * 100).toFixed(2)
       });

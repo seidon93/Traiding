@@ -95,6 +95,20 @@ const ChartEngine = (() => {
             }
         });
         resizeObserver.observe(container);
+
+        // Scroll-to-current button
+        const scrollBtn = document.getElementById('scrollToCurrent');
+        chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+            if (!range || candleData.length === 0) return;
+            // Show button when the last candle is not visible (scrolled back)
+            const lastIndex = candleData.length - 1;
+            const isAtEnd = range.to >= lastIndex - 2;
+            scrollBtn.classList.toggle('visible', !isAtEnd);
+        });
+
+        scrollBtn.addEventListener('click', () => {
+            chart.timeScale().scrollToRealTime();
+        });
     }
 
     function handleCrosshairMove(param) {

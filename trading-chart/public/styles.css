@@ -829,9 +829,39 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
   pointer-events: none;
   z-index: 5;
+  padding: 8px 12px;
+}
+
+/* ─── SCROLL TO CURRENT BUTTON ──────────────────────────── */
+.scroll-to-current {
+  position: absolute;
+  bottom: 36px;
+  right: 12px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.scroll-to-current.visible {
+  display: flex;
+}
+
+.scroll-to-current:hover {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  transform: scale(1.1);
 }
 
 .crosshair-info {
