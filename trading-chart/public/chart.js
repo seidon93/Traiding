@@ -9,6 +9,9 @@ const ChartEngine = (() => {
     let currentPriceLine = null;
     let slPriceLine = null;
     let candleData = [];
+    let rawCandleData = [];      // original unscaled candle data
+    let isPercentMode = false;
+    let activeCurrency = null;   // null = native, else {code,rate}
 
     // Indicator series references
     const indicatorSeries = {};
@@ -61,6 +64,16 @@ const ChartEngine = (() => {
                 barSpacing: 8,
                 minBarSpacing: 2
             },
+            localization: {
+                priceFormatter: price => {
+                    if (price == null) return '—';
+                    const abs = Math.abs(price);
+                    let decimals = abs >= 1000 ? 2 : abs >= 1 ? 2 : 6;
+                    const parts = price.toFixed(decimals).split('.');
+                    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                    return parts.join('.');
+                }
+            },
             handleScroll: { vertTouchDrag: true },
             handleScale: { axisPressedMouseMove: true }
         });
@@ -77,10 +90,11 @@ const ChartEngine = (() => {
             priceLineVisible: false
         });
 
-        // Volume series
+        // Volume series (hidden by default)
         volumeSeries = chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
-            priceScaleId: 'volume'
+            priceScaleId: 'volume',
+            visible: false
         });
 
         chart.priceScale('volume').applyOptions({
@@ -143,14 +157,19 @@ const ChartEngine = (() => {
 
     function fmt(num) {
         if (num == null) return '—';
-        if (num >= 1000) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        if (num >= 1) return num.toFixed(2);
-        return num.toFixed(6);
+        let decimals;
+        if (Math.abs(num) >= 1000) decimals = 2;
+        else if (Math.abs(num) >= 1) decimals = 2;
+        else decimals = 6;
+        const parts = num.toFixed(decimals).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        return parts.join('.');
     }
 
     function setData(candles) {
-        candleData = candles;
-        mainSeries.setData(candles);
+        rawCandleData = candles;
+        candleData = activeCurrency ? scaleCandles(candles, activeCurrency.rate) : candles;
+        mainSeries.setData(candleData);
 
         // Volume
         const volData = Indicators.volume(candles);
@@ -502,9 +521,12 @@ const ChartEngine = (() => {
                 break;
             }
             case 'volume': {
-                // Volume is already added by default, just toggle visibility
                 volumeSeries.applyOptions({ visible: true });
                 indicatorSeries[name] = []; // placeholder
+                // Subscribe to visible range to track max volume
+                updateMaxVolumeLine();
+                maxVolRangeSub = () => updateMaxVolumeLine();
+                chart.timeScale().subscribeVisibleLogicalRangeChange(maxVolRangeSub);
                 break;
             }
         }
@@ -519,6 +541,62 @@ const ChartEngine = (() => {
         }
         if (name === 'volume') {
             volumeSeries.applyOptions({ visible: false });
+            // Clean up max vol line & subscription
+            if (maxVolPriceLine) {
+                try { volumeSeries.removePriceLine(maxVolPriceLine); } catch (e) { }
+                maxVolPriceLine = null;
+            }
+            if (maxVolRangeSub) {
+                chart.timeScale().unsubscribeVisibleLogicalRangeChange(maxVolRangeSub);
+                maxVolRangeSub = null;
+            }
+        }
+    }
+
+    // ─── Max Volume Line ──────────────────────────────────
+    let maxVolPriceLine = null;
+    let maxVolRangeSub = null;
+
+    function updateMaxVolumeLine() {
+        // Remove old line
+        if (maxVolPriceLine) {
+            try { volumeSeries.removePriceLine(maxVolPriceLine); } catch (e) { }
+            maxVolPriceLine = null;
+        }
+
+        const range = chart.timeScale().getVisibleLogicalRange();
+        if (!range) return;
+
+        const volData = Indicators.volume(rawCandleData.length ? rawCandleData : candleData);
+        if (!volData || volData.length === 0) return;
+
+        const from = Math.max(0, Math.floor(range.from));
+        const to = Math.min(volData.length - 1, Math.ceil(range.to));
+
+        let maxVol = 0;
+        for (let i = from; i <= to; i++) {
+            if (volData[i] && volData[i].value > maxVol) {
+                maxVol = volData[i].value;
+            }
+        }
+
+        if (maxVol > 0) {
+            // Format volume for label
+            let label;
+            if (maxVol >= 1e9) label = (maxVol / 1e9).toFixed(2) + 'B';
+            else if (maxVol >= 1e6) label = (maxVol / 1e6).toFixed(2) + 'M';
+            else if (maxVol >= 1e3) label = (maxVol / 1e3).toFixed(1) + 'K';
+            else label = maxVol.toString();
+
+            maxVolPriceLine = volumeSeries.createPriceLine({
+                price: maxVol,
+                color: 'rgba(99, 115, 148, 0.4)',
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dotted,
+                axisLabelVisible: true,
+                title: label,
+                lineVisible: true
+            });
         }
     }
 
@@ -708,6 +786,55 @@ const ChartEngine = (() => {
         predictionLines.length = 0;
     }
 
+    // ─── Percent Mode ───────────────────────────────────────
+    function togglePercentMode(enable) {
+        if (!chart) return;
+        isPercentMode = enable;
+        chart.applyOptions({
+            rightPriceScale: {
+                mode: enable
+                    ? LightweightCharts.PriceScaleMode.Percentage
+                    : LightweightCharts.PriceScaleMode.Normal
+            }
+        });
+    }
+
+    // ─── Currency Conversion ────────────────────────────────
+    function scaleCandles(candles, rate) {
+        return candles.map(c => ({
+            time: c.time,
+            open: c.open * rate,
+            high: c.high * rate,
+            low: c.low * rate,
+            close: c.close * rate
+        }));
+    }
+
+    function setCurrency(code, rate) {
+        // rate = null means reset to native
+        if (!rate || rate === 1) {
+            activeCurrency = null;
+        } else {
+            activeCurrency = { code, rate };
+        }
+
+        // Re-apply data with new rate
+        if (rawCandleData.length) {
+            candleData = activeCurrency ? scaleCandles(rawCandleData, activeCurrency.rate) : rawCandleData;
+            mainSeries.setData(candleData);
+
+            // Re-set current price line if it exists
+            if (currentPriceLine) {
+                const origPrice = currentPriceLine.options().price;
+                // Don't re-scale — caller should call setCurrentPriceLine with new price
+            }
+        }
+    }
+
+    function getActiveCurrency() {
+        return activeCurrency;
+    }
+
     // ─── Resize ────────────────────────────────────────────
     function resize() {
         const container = document.getElementById('chart');
@@ -726,6 +853,7 @@ const ChartEngine = (() => {
         addMTFOverlay, removeMTFOverlay,
         addDailyRangeOverlay, clearDailyRangeOverlay,
         drawPredictionLines, clearPredictionLines,
+        togglePercentMode, setCurrency, getActiveCurrency,
         getIndicatorParams, fmt
     };
 })();

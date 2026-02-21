@@ -9,6 +9,9 @@
     let currentType = 'stock';
     let refreshTimer = null;
     let searchDebounce = null;
+    let nativeCurrency = 'EUR';   // detected from quote response
+    let lastRawPrice = null;
+    let budgetRateCache = {};     // cache budget exchange rates
 
     // ─── Boot ──────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
@@ -16,6 +19,8 @@
         Sidebar.initEvents();
         setupSearch();
         setupTimeframes();
+        setupChartToolbar();
+        setupBudgetCalculator();
 
         // Initial load
         loadTicker(currentSymbol);
@@ -36,6 +41,10 @@
         const mondayPanel = document.getElementById('mondayRangePanel');
         mondayPanel.style.display = currentType === 'crypto' ? 'none' : 'block';
 
+        // Reset currency to native on ticker change
+        ChartEngine.setCurrency(null, null);
+        budgetRateCache = {};
+
         // Load all data in parallel
         try {
             const [candleResult, quoteResult] = await Promise.allSettled([
@@ -48,9 +57,34 @@
                 ChartEngine.setData(candleResult.value.candles);
             }
 
-            // Set quote info
+            // Set quote info — also detects native currency
             if (quoteResult.status === 'fulfilled') {
-                updateQuoteDisplay(quoteResult.value);
+                const quote = quoteResult.value;
+
+                // ── Detect native currency from quote ──
+                if (quote.currency) {
+                    nativeCurrency = quote.currency.toUpperCase();
+                } else if (currentType === 'crypto') {
+                    nativeCurrency = 'USD';
+                } else {
+                    nativeCurrency = 'USD';
+                }
+
+                // Update the native button label
+                const nativeBtn = document.querySelector('.currency-btn[data-currency="native"]');
+                if (nativeBtn) {
+                    nativeBtn.textContent = nativeCurrency;
+                    // Reset all currency buttons
+                    document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+                    nativeBtn.classList.add('active');
+
+                    // Only hide the specific currency button that duplicates the native
+                    document.querySelectorAll('.currency-btn:not([data-currency="native"])').forEach(btn => {
+                        btn.style.display = btn.dataset.currency === nativeCurrency ? 'none' : '';
+                    });
+                }
+
+                updateQuoteDisplay(quote);
             }
         } catch (e) {
             console.error('Failed to load ticker:', e);
@@ -84,11 +118,18 @@
 
         // Set up auto-refresh
         setupAutoRefresh();
+
+        // Recalculate budget
+        recalcBudget();
     }
 
     function updateQuoteDisplay(quote) {
         document.getElementById('tickerName').textContent = quote.name || quote.symbol || '';
-        document.getElementById('tickerPrice').textContent = ChartEngine.fmt(quote.price);
+
+        // Apply currency conversion to displayed price
+        const curr = ChartEngine.getActiveCurrency();
+        const displayPrice = curr ? quote.price * curr.rate : quote.price;
+        document.getElementById('tickerPrice').textContent = ChartEngine.fmt(displayPrice);
 
         const pct = quote.changePercent;
         const changeEl = document.getElementById('tickerChange');
@@ -98,13 +139,20 @@
             changeEl.className = `ticker-change ${pct >= 0 ? 'up' : 'down'}`;
         }
 
-        // Update current price line on chart
+        // Update current price line on chart (converted)
         if (quote.price) {
-            ChartEngine.setCurrentPriceLine(quote.price);
+            const linePrice = curr ? quote.price * curr.rate : quote.price;
+            ChartEngine.setCurrentPriceLine(linePrice);
         }
 
         // Update SL with current price
         Sidebar.updateSL(quote.price);
+
+        // Store raw price for currency recalc & budget
+        lastRawPrice = quote.price;
+
+        // Recalculate budget with new price
+        recalcBudget();
     }
 
     // ─── Auto Refresh ─────────────────────────────────────
@@ -118,6 +166,124 @@
                 updateQuoteDisplay(quote);
             } catch (e) { /* silent */ }
         }, 30000);
+    }
+
+    // ─── Chart Toolbar (% + Currency) ────────────────────
+    function setupChartToolbar() {
+        // Percent mode toggle
+        const btnPercent = document.getElementById('btnPercent');
+        btnPercent.addEventListener('click', () => {
+            const isActive = btnPercent.classList.toggle('active');
+            ChartEngine.togglePercentMode(isActive);
+        });
+
+        // Currency buttons
+        const currencyBtns = document.querySelectorAll('.currency-btn');
+        currencyBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (btn.classList.contains('active')) return;
+
+                currencyBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const targetCurrency = btn.dataset.currency;
+
+                if (targetCurrency === 'native') {
+                    // Reset to native (no conversion)
+                    ChartEngine.setCurrency(null, null);
+                    if (lastRawPrice) {
+                        document.getElementById('tickerPrice').textContent = ChartEngine.fmt(lastRawPrice);
+                        ChartEngine.setCurrentPriceLine(lastRawPrice);
+                    }
+                } else {
+                    // Fetch exchange rate from native -> target
+                    try {
+                        const resp = await fetch(`/api/exchange-rate?from=${nativeCurrency}&to=${targetCurrency}`);
+                        const data = await resp.json();
+                        if (data.rate) {
+                            ChartEngine.setCurrency(targetCurrency, data.rate);
+                            if (lastRawPrice) {
+                                const converted = lastRawPrice * data.rate;
+                                document.getElementById('tickerPrice').textContent = ChartEngine.fmt(converted);
+                                ChartEngine.setCurrentPriceLine(converted);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Currency conversion error:', e);
+                    }
+                }
+            });
+        });
+    }
+
+    // ─── Budget Calculator ───────────────────────────────
+    function setupBudgetCalculator() {
+        const amountInput = document.getElementById('budgetAmount');
+        const currencySelect = document.getElementById('budgetCurrency');
+
+        amountInput.addEventListener('input', () => recalcBudget());
+        currencySelect.addEventListener('change', () => recalcBudget());
+    }
+
+    async function recalcBudget() {
+        const amountInput = document.getElementById('budgetAmount');
+        const currencySelect = document.getElementById('budgetCurrency');
+        const sharesEl = document.getElementById('budgetShares');
+        const priceEl = document.getElementById('budgetPricePerShare');
+        const costEl = document.getElementById('budgetTotalCost');
+        const remainEl = document.getElementById('budgetRemaining');
+
+        const budget = parseFloat(amountInput.value);
+        const budgetCurr = currencySelect.value;
+
+        if (!budget || budget <= 0 || !lastRawPrice || lastRawPrice <= 0) {
+            sharesEl.textContent = '—';
+            priceEl.textContent = '—';
+            costEl.textContent = '—';
+            remainEl.textContent = '—';
+            return;
+        }
+
+        // Price is in native currency. Budget might be in a different currency.
+        // Convert budget to native currency to calculate shares.
+        let budgetInNative = budget;
+
+        if (budgetCurr !== nativeCurrency) {
+            const key = `${budgetCurr}_${nativeCurrency}`;
+            if (budgetRateCache[key]) {
+                budgetInNative = budget * budgetRateCache[key];
+            } else {
+                try {
+                    const resp = await fetch(`/api/exchange-rate?from=${budgetCurr}&to=${nativeCurrency}`);
+                    const data = await resp.json();
+                    if (data.rate) {
+                        budgetRateCache[key] = data.rate;
+                        budgetInNative = budget * data.rate;
+                    }
+                } catch (e) {
+                    console.error('Budget rate error:', e);
+                    return;
+                }
+            }
+        }
+
+        const shares = Math.floor(budgetInNative / lastRawPrice);
+        const totalCost = shares * lastRawPrice;
+        const remaining = budgetInNative - totalCost;
+
+        // Format with native currency symbol
+        const currSymbol = getCurrencySymbol(nativeCurrency);
+        const budgetSymbol = getCurrencySymbol(budgetCurr);
+
+        sharesEl.textContent = shares.toLocaleString();
+        priceEl.textContent = `${currSymbol}${ChartEngine.fmt(lastRawPrice)}`;
+        costEl.textContent = `${currSymbol}${ChartEngine.fmt(totalCost)}`;
+        remainEl.textContent = `${budgetSymbol}${ChartEngine.fmt(remaining / (budgetRateCache[`${budgetCurr}_${nativeCurrency}`] || 1))}`;
+    }
+
+    function getCurrencySymbol(code) {
+        const map = { USD: '$', EUR: '€', GBP: '£', CZK: 'Kč ' };
+        return map[code] || code + ' ';
     }
 
     // ─── Search ───────────────────────────────────────────

@@ -676,6 +676,30 @@ function buildPrediction(tfGroup, tfData, currentPrice, mode) {
   };
 }
 
+// ─── Exchange Rate API ─────────────────────────────────────
+const rateCache = {};
+app.get('/api/exchange-rate', async (req, res) => {
+  const { from = 'USD', to = 'EUR' } = req.query;
+  const key = `${from}_${to}`;
+
+  // Cache for 10 minutes
+  if (rateCache[key] && Date.now() - rateCache[key].ts < 600000) {
+    return res.json({ rate: rateCache[key].rate });
+  }
+
+  try {
+    const url = `https://api.frankfurter.app/latest?from=${from}&to=${to}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const rate = data.rates[to];
+    rateCache[key] = { rate, ts: Date.now() };
+    res.json({ rate });
+  } catch (e) {
+    console.error('Exchange rate error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Trading Chart server running at http://localhost:3000`);
 

@@ -329,11 +329,7 @@ const Sidebar = (() => {
             downColor.addEventListener('change', handleMTFChange);
         }
 
-        // Enable volume by default
-        const volToggle = document.querySelector('[data-indicator="volume"]');
-        if (volToggle && volToggle.checked) {
-            ChartEngine.addIndicator('volume');
-        }
+        // Volume is off by default (checkbox unchecked)
 
         // Daily Range mode toggle (% / $ / H/L / O/C)
         document.getElementById('rangeModePercent').addEventListener('click', () => setRangeMode('percent'));
