@@ -213,7 +213,6 @@ const Sidebar = (() => {
 
         // Set initial button states
         document.getElementById('toggleLeftSidebar').classList.add('active');
-        document.getElementById('toggleRightSidebar').classList.add('active');
 
         // SL controls
         document.getElementById('riskPercent').addEventListener('input', () => {

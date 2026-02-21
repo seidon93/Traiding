@@ -408,8 +408,8 @@ button {
 }
 
 .trend-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
   align-items: center;
   padding: 6px 10px;
   border-radius: 6px;
@@ -420,7 +420,6 @@ button {
 .trend-item .tf-label {
   font-weight: 600;
   color: var(--text-secondary);
-  width: 36px;
 }
 
 .trend-item .trend-badge {
@@ -429,6 +428,8 @@ button {
   padding: 2px 8px;
   border-radius: 4px;
   font-family: var(--font-mono);
+  text-align: center;
+  justify-self: center;
 }
 
 .trend-badge.bull {
@@ -444,6 +445,8 @@ button {
 .trend-item .trend-pct {
   font-family: var(--font-mono);
   font-weight: 500;
+  text-align: right;
+  min-width: 54px;
 }
 
 .trend-loading {
