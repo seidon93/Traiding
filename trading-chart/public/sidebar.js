@@ -365,6 +365,174 @@ const Sidebar = (() => {
         rangeChartColor.addEventListener('change', handleRangeChart);
         rangeChartLineStyle.addEventListener('change', handleRangeChart);
         rangeChartLineWidth.addEventListener('change', handleRangeChart);
+
+        // ─── Prediction panel ────────────────────────────────
+        initPredictionEvents();
+    }
+
+    // ─── Prediction ──────────────────────────────────────────
+    let predictionData = null;  // cached API response
+    let activePredTab = 'short'; // 'short' or 'long'
+
+    function initPredictionEvents() {
+        const calcBtn = document.getElementById('calcPrediction');
+        const slSlider = document.getElementById('predSLMultiplier');
+        const slValLabel = document.getElementById('predSLValue');
+        const showOnChart = document.getElementById('predShowOnChart');
+
+        // Tab switching
+        document.querySelectorAll('.pred-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.pred-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activePredTab = tab.dataset.predTab;
+                if (predictionData) renderPrediction();
+            });
+        });
+
+        // Calculate button
+        calcBtn.addEventListener('click', async () => {
+            const symbol = document.getElementById('tickerSymbol').textContent;
+            calcBtn.disabled = true;
+            calcBtn.textContent = '⏳ Calculating...';
+            document.getElementById('predictionContent').innerHTML =
+                '<div class="trend-loading">Analyzing 6 timeframes...</div>';
+
+            try {
+                predictionData = await DataService.getPrediction(symbol);
+                renderPrediction();
+            } catch (e) {
+                document.getElementById('predictionContent').innerHTML =
+                    '<div class="trend-loading" style="color:var(--candle-down)">Failed to calculate</div>';
+                console.error('Prediction error:', e);
+            } finally {
+                calcBtn.disabled = false;
+                calcBtn.textContent = '⚡ Calculate';
+            }
+        });
+
+        // SL multiplier slider
+        slSlider.addEventListener('input', () => {
+            const val = parseFloat(slSlider.value);
+            slValLabel.textContent = `${val.toFixed(1)}×`;
+            if (predictionData) renderPrediction();
+        });
+
+        // Show on chart toggle
+        showOnChart.addEventListener('change', () => {
+            if (showOnChart.checked && predictionData) {
+                drawCurrentPredOnChart();
+            } else {
+                ChartEngine.clearPredictionLines();
+            }
+        });
+    }
+
+    function renderPrediction() {
+        if (!predictionData) return;
+
+        const slMult = parseFloat(document.getElementById('predSLMultiplier').value) || 1;
+        const pred = activePredTab === 'short' ? predictionData.shortTerm : predictionData.longTerm;
+        const content = document.getElementById('predictionContent');
+
+        if (!pred) {
+            content.innerHTML = '<div class="trend-loading" style="color:var(--text-muted)">No data for this mode</div>';
+            return;
+        }
+
+        const price = predictionData.currentPrice;
+        const fmt = ChartEngine.fmt;
+
+        // Recalculate SL with slider multiplier
+        const longSL = price - pred.avgATR * slMult;
+        const shortSL = price + pred.avgATR * slMult;
+        const longRR = pred.long.rr * (1 / slMult);
+        const shortRR = pred.short.rr * (1 / slMult);
+
+        // Confidence bar color
+        const confColor = pred.confidence >= 80 ? 'var(--candle-up)' :
+            pred.confidence >= 50 ? 'var(--accent-warning)' : 'var(--candle-down)';
+
+        let html = '';
+
+        // Consensus + Confidence
+        html += `<div class="pred-consensus">
+            <span>Consensus: <span class="consensus-label ${pred.consensus}">${pred.consensus === 'bull' ? '▲ BULL' : pred.consensus === 'bear' ? '▼ BEAR' : '— NEUTRAL'}</span></span>
+            <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${pred.confidence}%</span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width:${pred.confidence}%;background:${confColor}"></div>
+                </div>
+            </div>
+        </div>`;
+
+        // TF breakdown chips
+        html += '<div class="pred-tf-breakdown">';
+        for (const tf of pred.timeframes) {
+            html += `<span class="pred-tf-chip ${tf.trend}">${tf.label} ${tf.trend === 'bull' ? '▲' : '▼'}</span>`;
+        }
+        html += '</div>';
+
+        // ATR info
+        html += `<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;font-family:var(--font-mono)">
+            ATR: ${fmt(pred.avgATR)} · Strength: ${pred.avgStrength}%
+        </div>`;
+
+        // Long prediction card
+        html += `<div class="pred-direction">
+            <div class="pred-direction-header long">
+                <span>▲ Long</span>
+                <span class="rr-badge">R:R ${longRR.toFixed(1)}</span>
+            </div>
+            <div class="pred-row"><span class="pred-label">Entry</span><span class="pred-value entry">${fmt(pred.long.entry)}</span></div>
+            <div class="pred-row"><span class="pred-label">Target</span><span class="pred-value target">${fmt(pred.long.target)}</span></div>
+            <div class="pred-row"><span class="pred-label">Stop Loss</span><span class="pred-value sl">${fmt(longSL)}</span></div>
+        </div>`;
+
+        // Short prediction card
+        html += `<div class="pred-direction">
+            <div class="pred-direction-header short">
+                <span>▼ Short</span>
+                <span class="rr-badge">R:R ${shortRR.toFixed(1)}</span>
+            </div>
+            <div class="pred-row"><span class="pred-label">Entry</span><span class="pred-value entry">${fmt(pred.short.entry)}</span></div>
+            <div class="pred-row"><span class="pred-label">Target</span><span class="pred-value target-short">${fmt(pred.short.target)}</span></div>
+            <div class="pred-row"><span class="pred-label">Stop Loss</span><span class="pred-value sl-short">${fmt(shortSL)}</span></div>
+        </div>`;
+
+        // Support / Resistance
+        if (pred.support || pred.resistance) {
+            html += '<div class="pred-sr">';
+            if (pred.support) html += `<span><span class="sr-label">Support: </span><span class="sr-val" style="color:var(--candle-up)">${fmt(pred.support)}</span></span>`;
+            if (pred.resistance) html += `<span><span class="sr-label">Resistance: </span><span class="sr-val" style="color:var(--candle-down)">${fmt(pred.resistance)}</span></span>`;
+            html += '</div>';
+        }
+
+        content.innerHTML = html;
+
+        // Update chart if show on chart is enabled
+        if (document.getElementById('predShowOnChart').checked) {
+            drawCurrentPredOnChart();
+        }
+    }
+
+    function drawCurrentPredOnChart() {
+        if (!predictionData) return;
+
+        const slMult = parseFloat(document.getElementById('predSLMultiplier').value) || 1;
+        const pred = activePredTab === 'short' ? predictionData.shortTerm : predictionData.longTerm;
+        if (!pred) return;
+
+        const price = predictionData.currentPrice;
+
+        // Draw the consensus direction (show the recommended direction)
+        if (pred.consensus === 'bull' || pred.consensus === 'neutral') {
+            const longSL = price - pred.avgATR * slMult;
+            ChartEngine.drawPredictionLines(pred.long.entry, pred.long.target, longSL, 'long');
+        } else {
+            const shortSL = price + pred.avgATR * slMult;
+            ChartEngine.drawPredictionLines(pred.short.entry, pred.short.target, shortSL, 'short');
+        }
     }
 
     async function loadMTFOverlay(index, timeframe, upColor, downColor) {

@@ -645,6 +645,59 @@ const ChartEngine = (() => {
         dailyRangeAreas.length = 0;
     }
 
+    // ─── Prediction Lines ───────────────────────────────────
+    const predictionLines = [];
+
+    function drawPredictionLines(entry, target, sl, direction) {
+        clearPredictionLines();
+        if (!mainSeries) return;
+
+        const isLong = direction === 'long';
+
+        // Entry line — white
+        const entryLine = mainSeries.createPriceLine({
+            price: entry,
+            color: '#ffffff',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid,
+            axisLabelVisible: true,
+            title: `${isLong ? '▲' : '▼'} Entry`,
+            lineVisible: true
+        });
+        predictionLines.push(entryLine);
+
+        // Target line — green for long, red for short
+        const targetLine = mainSeries.createPriceLine({
+            price: target,
+            color: isLong ? '#26a69a' : '#ef5350',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: 'Target',
+            lineVisible: true
+        });
+        predictionLines.push(targetLine);
+
+        // SL line — red for long, green for short
+        const slLine = mainSeries.createPriceLine({
+            price: sl,
+            color: isLong ? '#ef5350' : '#26a69a',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: true,
+            title: 'SL',
+            lineVisible: true
+        });
+        predictionLines.push(slLine);
+    }
+
+    function clearPredictionLines() {
+        for (const line of predictionLines) {
+            try { mainSeries.removePriceLine(line); } catch (e) { }
+        }
+        predictionLines.length = 0;
+    }
+
     // ─── Resize ────────────────────────────────────────────
     function resize() {
         const container = document.getElementById('chart');
@@ -662,6 +715,7 @@ const ChartEngine = (() => {
         addIndicator, removeIndicator,
         addMTFOverlay, removeMTFOverlay,
         addDailyRangeOverlay, clearDailyRangeOverlay,
+        drawPredictionLines, clearPredictionLines,
         getIndicatorParams, fmt
     };
 })();

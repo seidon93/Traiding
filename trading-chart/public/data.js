@@ -72,5 +72,14 @@ const DataService = (() => {
         return fetchJSON('/api/daily-ranges', { symbol, type });
     }
 
-    return { getCandles, getQuote, searchTicker, getMondayRange, getTrend, getDailyRanges, isCrypto };
+    async function getPrediction(symbol) {
+        const type = isCrypto(symbol) ? 'crypto' : 'stock';
+        // Don't cache predictions — always fresh
+        const url = `/api/prediction?symbol=${encodeURIComponent(symbol)}&type=${type}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+        return resp.json();
+    }
+
+    return { getCandles, getQuote, searchTicker, getMondayRange, getTrend, getDailyRanges, getPrediction, isCrypto };
 })();

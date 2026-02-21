@@ -4,7 +4,7 @@
 
 (() => {
     // ─── State ─────────────────────────────────────────────
-    let currentSymbol = 'AAPL';
+    let currentSymbol = 'ASML.AS';
     let currentInterval = '1d';
     let currentType = 'stock';
     let refreshTimer = null;
