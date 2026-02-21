@@ -21,6 +21,7 @@
         setupTimeframes();
         setupChartToolbar();
         setupBudgetCalculator();
+        startCETClock();
 
         // Initial load
         loadTicker(currentSymbol);
@@ -74,14 +75,12 @@
                 const nativeBtn = document.querySelector('.currency-btn[data-currency="native"]');
                 if (nativeBtn) {
                     nativeBtn.textContent = nativeCurrency;
-                    // Reset all currency buttons
-                    document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
-                    nativeBtn.classList.add('active');
-
-                    // Only hide the specific currency button that duplicates the native
-                    document.querySelectorAll('.currency-btn:not([data-currency="native"])').forEach(btn => {
-                        btn.style.display = btn.dataset.currency === nativeCurrency ? 'none' : '';
+                    // Reset all currency buttons — all always visible
+                    document.querySelectorAll('.currency-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.display = '';
                     });
+                    nativeBtn.classList.add('active');
                 }
 
                 updateQuoteDisplay(quote);
@@ -284,6 +283,24 @@
     function getCurrencySymbol(code) {
         const map = { USD: '$', EUR: '€', GBP: '£', CZK: 'Kč ' };
         return map[code] || code + ' ';
+    }
+
+    // ─── CET Clock ────────────────────────────────────────
+    function startCETClock() {
+        const el = document.getElementById('cetClock');
+        function tick() {
+            const now = new Date();
+            const cetStr = now.toLocaleString('en-GB', {
+                timeZone: 'Europe/Berlin',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            el.textContent = cetStr + ' CET';
+        }
+        tick();
+        setInterval(tick, 1000);
     }
 
     // ─── Search ───────────────────────────────────────────

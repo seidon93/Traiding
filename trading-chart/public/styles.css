@@ -1334,3 +1334,17 @@ button {
     display: none;
   }
 }
+
+/* ─── CET CLOCK ──────────────────────────────────────────── */
+.cet-clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 212, 170, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.15);
+  white-space: nowrap;
+}
