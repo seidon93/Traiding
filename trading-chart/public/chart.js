@@ -57,7 +57,7 @@ const ChartEngine = (() => {
                 borderColor: 'rgba(99, 115, 148, 0.2)',
                 timeVisible: true,
                 secondsVisible: false,
-                rightOffset: 12,
+                rightOffset: 30,
                 barSpacing: 8,
                 minBarSpacing: 2
             },
@@ -72,7 +72,9 @@ const ChartEngine = (() => {
             borderUpColor: '#26a69a',
             borderDownColor: '#ef5350',
             wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350'
+            wickDownColor: '#ef5350',
+            lastValueVisible: false,
+            priceLineVisible: false
         });
 
         // Volume series
@@ -154,8 +156,16 @@ const ChartEngine = (() => {
         const volData = Indicators.volume(candles);
         volumeSeries.setData(volData);
 
-        // Fit chart to content
-        chart.timeScale().fitContent();
+        // Show last ~150 candles so chart looks zoomed‑in on load
+        const visibleBars = 150;
+        if (candles.length > visibleBars) {
+            chart.timeScale().setVisibleLogicalRange({
+                from: candles.length - visibleBars,
+                to: candles.length + 30 // right offset room
+            });
+        } else {
+            chart.timeScale().fitContent();
+        }
 
         // Update all active indicators
         updateAllIndicators();
