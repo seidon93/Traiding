@@ -97,11 +97,34 @@
         <div class="alert-panel" id="alertPanel">
           <div class="alert-panel-header">
             <h4>⚡ Price Alerts</h4>
-            <label class="toggle-row alert-sound-toggle">
+          </div>
+          <!-- Sound controls -->
+          <div class="alert-sound-controls">
+            <label class="toggle-row">
               <input type="checkbox" id="alertSoundEnabled" checked>
               <span class="toggle-label">🔔 Sound</span>
             </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="alertRepeatSound">
+              <span class="toggle-label">🔁 Repeat</span>
+            </label>
           </div>
+          <div class="alert-sound-settings">
+            <div class="alert-sound-row">
+              <label>Type</label>
+              <select id="alertSoundType" class="alert-select">
+                <option value="beep">Beep</option>
+                <option value="chime">Chime</option>
+                <option value="ping">Ping</option>
+              </select>
+            </div>
+            <div class="alert-sound-row">
+              <label>Vol</label>
+              <input type="range" id="alertVolume" min="0" max="100" value="50" class="alert-vol-slider">
+              <span id="alertVolLabel" class="alert-vol-label">50%</span>
+            </div>
+          </div>
+          <!-- Add alert form -->
           <div class="alert-form">
             <div class="alert-form-row">
               <input type="number" id="alertPrice" placeholder="Price…" step="any" class="alert-price-input">
@@ -112,10 +135,43 @@
           <div class="alert-active-list" id="alertActiveList">
             <div class="alert-empty">No active alerts</div>
           </div>
-          <div class="alert-history-header">History</div>
+          <div class="alert-history-header">
+            <span>History</span>
+            <button id="clearAlertHistory" class="alert-clear-btn" title="Clear history">🗑</button>
+          </div>
           <div class="alert-history-list" id="alertHistoryList">
             <div class="alert-empty">No alerts triggered yet</div>
           </div>
+        </div>
+      </div>
+      <!-- Trade Journal -->
+      <div class="trade-journal-wrap">
+        <button class="icon-btn trade-journal-btn" id="tradeJournalBtn" title="Trade Journal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </button>
+        <div class="trade-panel" id="tradePanel">
+          <div class="trade-panel-header">
+            <h4>📒 Trade Journal</h4>
+          </div>
+          <div class="trade-form" id="tradeForm">
+            <div class="trade-form-grid">
+              <input type="text" id="tradeTicker" placeholder="Ticker" class="trade-input trade-ticker">
+              <input type="number" id="tradeBuyPrice" placeholder="Buy price" step="any" class="trade-input">
+              <input type="number" id="tradeSellPrice" placeholder="Sell price" step="any" class="trade-input">
+              <input type="number" id="tradeQty" placeholder="Qty" step="any" class="trade-input trade-qty">
+            </div>
+            <div class="trade-form-actions">
+              <button id="addTradeBtn" class="trade-save-btn">+ Add Trade</button>
+              <button id="cancelEditTradeBtn" class="trade-cancel-btn" style="display:none">Cancel</button>
+            </div>
+          </div>
+          <div class="trade-list" id="tradeList">
+            <div class="alert-empty">No trades recorded</div>
+          </div>
+          <div class="trade-total" id="tradeTotal"></div>
         </div>
       </div>
       <button class="icon-btn" id="toggleLeftSidebar" title="Toggle Left Panel">
