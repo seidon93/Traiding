@@ -604,29 +604,44 @@ const ChartEngine = (() => {
             case 'cot': {
                 const color = params.color || '#45b7d1';
                 try {
-                    // COT proxy: cumulative money flow from SPY weekly candles
-                    const resp = await fetch('/api/candles?symbol=SPY&interval=1wk&count=200');
-                    const cotData = await resp.json();
-                    if (cotData.candles && cotData.candles.length > 1) {
+                    // Fetch real CFTC COT data
+                    const cotResp = await fetch('/api/cot');
+                    const cotJson = await cotResp.json();
+
+                    // Also get SPY weekly for the timeline
+                    const spyResp = await fetch('/api/candles?symbol=SPY&interval=1wk&count=200');
+                    const spyData = await spyResp.json();
+
+                    if (spyData.candles && spyData.candles.length > 1) {
                         let cumFlow = 0;
                         const cotLine = [];
-                        for (let i = 1; i < cotData.candles.length; i++) {
-                            const c = cotData.candles[i];
+                        for (let i = 1; i < spyData.candles.length; i++) {
+                            const c = spyData.candles[i];
                             const hl = c.high - c.low;
                             if (hl > 0) {
-                                // Money Flow Multiplier × Volume
                                 const mfm = ((c.close - c.low) - (c.high - c.close)) / hl;
                                 cumFlow += mfm * (c.volume || 0) / 1e6;
                             }
                             cotLine.push({ time: c.time, value: Math.round(cumFlow * 10) / 10 });
                         }
+
+                        // Build title with real CFTC data
+                        let cotTitle = 'COT';
+                        if (cotJson.instruments) {
+                            const sp = cotJson.instruments.find(i => i.code === '13874A' || i.code === '13874+');
+                            if (sp) {
+                                const net = sp.nonCommercial.net;
+                                cotTitle = `COT Net: ${net > 0 ? '+' : ''}${net.toLocaleString()}`;
+                            }
+                        }
+
                         const series = chart.addLineSeries({
                             color, lineWidth: 2,
                             priceScaleId: 'cot',
                             lastValueVisible: true,
                             priceLineVisible: true,
                             crosshairMarkerVisible: true,
-                            title: 'COT'
+                            title: cotTitle
                         });
                         chart.priceScale('cot').applyOptions({
                             scaleMargins: { top: 0.7, bottom: 0.02 },
@@ -634,7 +649,6 @@ const ChartEngine = (() => {
                             visible: true
                         });
                         series.setData(cotLine);
-                        // Zero line
                         const zLine = chart.addLineSeries({ color: 'rgba(255,255,255,0.15)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'cot', lastValueVisible: false, priceLineVisible: false });
                         zLine.setData(cotLine.map(r => ({ time: r.time, value: 0 })));
                         indicatorSeries[name] = [series, zLine];

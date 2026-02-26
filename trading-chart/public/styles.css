@@ -2138,3 +2138,41 @@ button {
   justify-content: space-between;
   align-items: center;
 }
+
+/* ─── MONTH ALERT ────────────────────────────────────────── */
+.month-alert {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-left: 8px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  animation: monthPulse 2s ease-in-out infinite;
+}
+
+.month-alert.month-end {
+  background: rgba(245, 166, 35, 0.2);
+  color: #f5a623;
+  border: 1px solid rgba(245, 166, 35, 0.5);
+  box-shadow: 0 0 10px rgba(245, 166, 35, 0.3);
+}
+
+.month-alert.month-start {
+  background: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.5);
+  box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+}
+
+@keyframes monthPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}

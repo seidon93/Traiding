@@ -307,6 +307,7 @@
     // ─── CET Clock ────────────────────────────────────────
     function startCETClock() {
         const el = document.getElementById('cetClock');
+        const monthAlertEl = document.getElementById('monthAlert');
         function tick() {
             const now = new Date();
             const cetStr = now.toLocaleString('en-GB', {
@@ -317,6 +318,26 @@
                 hour12: false
             });
             el.textContent = cetStr + ' CET';
+
+            // Month-end / Month-start alert
+            const cetDate = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+            const day = cetDate.getDate();
+            const lastDay = new Date(cetDate.getFullYear(), cetDate.getMonth() + 1, 0).getDate();
+            const daysLeft = lastDay - day;
+
+            if (daysLeft <= 6) {
+                // Last week of month
+                monthAlertEl.style.display = '';
+                monthAlertEl.className = 'month-alert month-end';
+                monthAlertEl.innerHTML = '⚠️ Month End';
+            } else if (day <= 2) {
+                // First 2 days of month
+                monthAlertEl.style.display = '';
+                monthAlertEl.className = 'month-alert month-start';
+                monthAlertEl.innerHTML = '🔔 Month Start';
+            } else {
+                monthAlertEl.style.display = 'none';
+            }
         }
         tick();
         setInterval(tick, 1000);

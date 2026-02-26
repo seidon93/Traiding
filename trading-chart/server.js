@@ -742,6 +742,113 @@ app.get('/api/exchange-rate', async (req, res) => {
   }
 });
 
+// ─── CFTC COT Data (Real) ───────────────────────────────────────────
+let cotCache = { data: null, ts: 0 };
+app.get('/api/cot', async (req, res) => {
+  try {
+    // Cache for 5 minutes
+    if (cotCache.data && Date.now() - cotCache.ts < 300000) {
+      return res.json(cotCache.data);
+    }
+
+    const resp = await fetch('https://www.cftc.gov/dea/futures/deacmesf.htm', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    const text = await resp.text();
+
+    // Parse S&P 500 E-mini data (Code-13874A)
+    const results = [];
+    const instruments = {
+      'S&P 500 Consolidated': '13874+',
+      'E-MINI S&P 500': '13874A',
+      'NASDAQ-100 Consolidated': '20974+',
+      'EURO FX': '099741',
+      'BITCOIN': '133741'
+    };
+
+    for (const [name, code] of Object.entries(instruments)) {
+      const codePattern = `Code-${code}`;
+      const idx = text.indexOf(codePattern);
+      if (idx === -1) continue;
+
+      // Find COMMITMENTS line after this code
+      const section = text.substring(idx, idx + 800);
+      const commitMatch = section.match(/COMMITMENTS\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)/);
+      const oiMatch = section.match(/OPEN INTEREST:\s+([\d,]+)/);
+
+      if (commitMatch) {
+        const parse = s => parseInt(s.replace(/,/g, ''));
+        const ncLong = parse(commitMatch[1]);
+        const ncShort = parse(commitMatch[2]);
+        const ncSpread = parse(commitMatch[3]);
+        const commLong = parse(commitMatch[4]);
+        const commShort = parse(commitMatch[5]);
+        const oi = oiMatch ? parse(oiMatch[1]) : 0;
+
+        results.push({
+          name,
+          code,
+          openInterest: oi,
+          nonCommercial: { long: ncLong, short: ncShort, spread: ncSpread, net: ncLong - ncShort },
+          commercial: { long: commLong, short: commShort, net: commLong - commShort }
+        });
+      }
+    }
+
+    const result = { date: 'weekly', instruments: results };
+    cotCache = { data: result, ts: Date.now() };
+    res.json(result);
+  } catch (e) {
+    console.error('COT error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Put/Call Ratio (derived from VIX levels) ──────────────────────
+let pcCache = { data: null, ts: 0 };
+app.get('/api/putcall', async (req, res) => {
+  try {
+    if (pcCache.data && Date.now() - pcCache.ts < 60000) {
+      return res.json(pcCache.data);
+    }
+
+    // Fetch VIX for Put/Call derivation
+    const url = `${YF_BASE}/v8/finance/chart/%5EVIX?range=3mo&interval=1d`;
+    const data = await yfFetch(url);
+    const result = data?.chart?.result?.[0];
+    if (!result) return res.status(404).json({ error: 'No VIX data for PC ratio' });
+
+    const closes = result.indicators.quote[0].close.filter(v => v != null);
+    const timestamps = result.timestamp;
+    const currentVIX = closes[closes.length - 1];
+
+    // VIX-to-Put/Call ratio approximation
+    // Historical correlation: VIX 12-15 ≈ P/C 0.7-0.8, VIX 20 ≈ P/C 1.0, VIX 30+ ≈ P/C 1.3+
+    const pcRatio = Math.round((0.5 + (currentVIX / 40)) * 1000) / 1000;
+
+    // Create historical P/C ratio timeline
+    const history = closes.map((v, i) => ({
+      time: timestamps[i],
+      ratio: Math.round((0.5 + (v / 40)) * 1000) / 1000
+    }));
+
+    const sentiment = pcRatio > 1.0 ? 'Fearful' : pcRatio < 0.7 ? 'Greedy' : 'Neutral';
+
+    const pcResult = {
+      putCallRatio: pcRatio,
+      vix: currentVIX,
+      sentiment,
+      history
+    };
+
+    pcCache = { data: pcResult, ts: Date.now() };
+    res.json(pcResult);
+  } catch (e) {
+    console.error('Put/Call error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Trading Chart server running at http://localhost:3000`);
 
