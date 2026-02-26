@@ -692,10 +692,11 @@
                 playAlertSound();
                 if (repeatEnabled) {
                     let count = 0;
+                    const maxRepeats = parseInt(document.getElementById('alertRepeatCount')?.value) || 3;
                     if (repeatInterval) clearInterval(repeatInterval);
                     repeatInterval = setInterval(() => {
                         count++;
-                        if (count >= 3) { clearInterval(repeatInterval); repeatInterval = null; return; }
+                        if (count >= maxRepeats) { clearInterval(repeatInterval); repeatInterval = null; return; }
                         playAlertSound();
                     }, 1500);
                 }
@@ -806,6 +807,7 @@
             const buyPrice = parseFloat(document.getElementById('tradeBuyPrice').value);
             const sellPrice = parseFloat(document.getElementById('tradeSellPrice').value);
             const qty = parseFloat(document.getElementById('tradeQty').value);
+            const leverage = parseInt(document.getElementById('tradeLeverage').value) || 0;
 
             if (!ticker || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(qty) || qty <= 0) return;
 
@@ -814,12 +816,13 @@
                 if (t) {
                     t.ticker = ticker; t.buyPrice = buyPrice;
                     t.sellPrice = sellPrice; t.qty = qty;
+                    t.leverage = leverage;
                 }
                 editingTradeId = null;
                 addBtn.textContent = '+ Add Trade';
                 cancelBtn.style.display = 'none';
             } else {
-                trades.push({ id: ++tradeIdCounter, ticker, buyPrice, sellPrice, qty });
+                trades.push({ id: ++tradeIdCounter, ticker, buyPrice, sellPrice, qty, leverage });
             }
 
             clearTradeForm();
@@ -842,6 +845,7 @@
         document.getElementById('tradeBuyPrice').value = '';
         document.getElementById('tradeSellPrice').value = '';
         document.getElementById('tradeQty').value = '';
+        document.getElementById('tradeLeverage').value = '0';
     }
 
     function startEditTrade(id) {
@@ -851,6 +855,7 @@
         document.getElementById('tradeBuyPrice').value = t.buyPrice;
         document.getElementById('tradeSellPrice').value = t.sellPrice;
         document.getElementById('tradeQty').value = t.qty;
+        document.getElementById('tradeLeverage').value = t.leverage || 0;
         document.getElementById('addTradeBtn').textContent = '✓ Save';
         document.getElementById('cancelEditTradeBtn').style.display = '';
         editingTradeId = id;
@@ -875,13 +880,16 @@
 
         let totalPL = 0;
         list.innerHTML = trades.map(t => {
-            const pl = (t.sellPrice - t.buyPrice) * t.qty;
+            const basePL = (t.sellPrice - t.buyPrice) * t.qty;
+            const lev = (t.leverage && t.leverage > 1) ? t.leverage : 1;
+            const pl = basePL * lev;
             totalPL += pl;
             const plClass = pl >= 0 ? 'profit' : 'loss';
             const plSign = pl >= 0 ? '+' : '';
+            const levBadge = lev > 1 ? `<span style="font-size:9px;color:var(--accent-primary);margin-left:2px">${lev}×</span>` : '';
             return `
                 <div class="trade-item">
-                    <span class="trade-item-ticker">${t.ticker}</span>
+                    <span class="trade-item-ticker">${t.ticker}${levBadge}</span>
                     <span class="trade-item-detail">
                         <span>Buy: ${t.buyPrice.toLocaleString()}</span>
                         <span>Sell: ${t.sellPrice.toLocaleString()}</span>

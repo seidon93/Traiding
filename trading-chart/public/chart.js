@@ -428,7 +428,7 @@ const ChartEngine = (() => {
     }
 
     // ─── Indicators ────────────────────────────────────────
-    function addIndicator(name, params = {}) {
+    async function addIndicator(name, params = {}) {
         removeIndicator(name);
 
         const data = candleData;
@@ -453,6 +453,15 @@ const ChartEngine = (() => {
                 indicatorSeries[name] = [series];
                 break;
             }
+            case 'sma50': {
+                const period = params.period || 50;
+                const color = params.color || '#3498db';
+                const result = Indicators.sma(data, period);
+                const series = chart.addLineSeries({ color, lineWidth: 1.5, priceScaleId: 'right', lastValueVisible: false, priceLineVisible: false });
+                series.setData(result);
+                indicatorSeries[name] = [series];
+                break;
+            }
             case 'sma200': {
                 const period = params.period || 200;
                 const color = params.color || '#e74c3c';
@@ -460,6 +469,177 @@ const ChartEngine = (() => {
                 const series = chart.addLineSeries({ color, lineWidth: 2, priceScaleId: 'right', lastValueVisible: false, priceLineVisible: false });
                 series.setData(result);
                 indicatorSeries[name] = [series];
+                break;
+            }
+            case 'vix': {
+                const color = params.color || '#ff6b6b';
+                try {
+                    const resp = await fetch('/api/candles?symbol=^VIX&interval=1d&count=500');
+                    const vixData = await resp.json();
+                    if (vixData.candles && vixData.candles.length > 0) {
+                        const vixLine = vixData.candles.map(c => ({ time: c.time, value: c.close }));
+                        const series = chart.addLineSeries({
+                            color, lineWidth: 2,
+                            priceScaleId: 'vix',
+                            lastValueVisible: true,
+                            priceLineVisible: true,
+                            crosshairMarkerVisible: true,
+                            title: 'VIX'
+                        });
+                        chart.priceScale('vix').applyOptions({
+                            scaleMargins: { top: 0.7, bottom: 0.02 },
+                            autoScale: true,
+                            visible: true
+                        });
+                        series.setData(vixLine);
+                        // Fear levels
+                        const fear20 = chart.addLineSeries({ color: 'rgba(38,166,154,0.3)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'vix', lastValueVisible: false, priceLineVisible: false });
+                        const fear30 = chart.addLineSeries({ color: 'rgba(239,83,80,0.3)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'vix', lastValueVisible: false, priceLineVisible: false });
+                        fear20.setData(vixLine.map(r => ({ time: r.time, value: 20 })));
+                        fear30.setData(vixLine.map(r => ({ time: r.time, value: 30 })));
+                        indicatorSeries[name] = [series, fear20, fear30];
+                    }
+                } catch (e) { console.warn('VIX load failed:', e); }
+                break;
+            }
+            case 'breadth': {
+                const color = params.color || '#4ecdc4';
+                try {
+                    // Market breadth: compute advance/decline from SPY daily candles
+                    const resp = await fetch('/api/candles?symbol=SPY&interval=1d&count=500');
+                    const bData = await resp.json();
+                    if (bData.candles && bData.candles.length > 1) {
+                        let cumAD = 0;
+                        const adLine = [];
+                        for (let i = 1; i < bData.candles.length; i++) {
+                            const c = bData.candles[i];
+                            // Advance/Decline from candle internals
+                            const hl = c.high - c.low;
+                            if (hl > 0) {
+                                const ad = ((c.close - c.low) - (c.high - c.close)) / hl;
+                                cumAD += ad * (c.volume || 1) / 1e6;
+                            }
+                            adLine.push({ time: c.time, value: Math.round(cumAD * 100) / 100 });
+                        }
+                        const series = chart.addLineSeries({
+                            color, lineWidth: 2,
+                            priceScaleId: 'breadth',
+                            lastValueVisible: true,
+                            priceLineVisible: true,
+                            crosshairMarkerVisible: true,
+                            title: 'A/D'
+                        });
+                        chart.priceScale('breadth').applyOptions({
+                            scaleMargins: { top: 0.7, bottom: 0.02 },
+                            autoScale: true,
+                            visible: true
+                        });
+                        series.setData(adLine);
+                        // Zero line
+                        const zeroLine = chart.addLineSeries({ color: 'rgba(255,255,255,0.15)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'breadth', lastValueVisible: false, priceLineVisible: false });
+                        zeroLine.setData(adLine.map(r => ({ time: r.time, value: 0 })));
+                        indicatorSeries[name] = [series, zeroLine];
+                    }
+                } catch (e) { console.warn('Breadth load failed:', e); }
+                break;
+            }
+            case 'divergence': {
+                const color = params.color || '#ffd93d';
+                // RSI divergence detection
+                const rsiData = Indicators.rsi(data, 14);
+                const markers = [];
+                const lookback = 10;
+                for (let i = lookback + 1; i < data.length; i++) {
+                    const ri = rsiData.find(r => r.time === data[i].time);
+                    const riPrev = rsiData.find(r => r.time === data[i - lookback]?.time);
+                    if (!ri || !riPrev) continue;
+
+                    // Bullish divergence: price makes lower low, RSI makes higher low
+                    if (data[i].low < data[i - lookback].low && ri.value > riPrev.value && ri.value < 40) {
+                        markers.push({ time: data[i].time, position: 'belowBar', color: '#26a69a', shape: 'arrowUp', text: 'Bull Div' });
+                    }
+                    // Bearish divergence: price makes higher high, RSI makes lower high
+                    if (data[i].high > data[i - lookback].high && ri.value < riPrev.value && ri.value > 60) {
+                        markers.push({ time: data[i].time, position: 'aboveBar', color: '#ef5350', shape: 'arrowDown', text: 'Bear Div' });
+                    }
+                }
+                mainSeries.setMarkers(markers);
+                indicatorSeries[name] = '_markers_'; // special flag for cleanup
+                break;
+            }
+            case 'gamma': {
+                const color = params.color || '#c084fc';
+                try {
+                    const resp = await fetch('/api/candles?symbol=^VIX&interval=1d&count=500');
+                    const gData = await resp.json();
+                    if (gData.candles && gData.candles.length > 5) {
+                        // Gamma proxy: VIX rate of change (smoothed) — negative = positive gamma environment
+                        const gammaLine = [];
+                        for (let i = 5; i < gData.candles.length; i++) {
+                            const roc = ((gData.candles[i].close - gData.candles[i - 5].close) / gData.candles[i - 5].close) * 100;
+                            gammaLine.push({ time: gData.candles[i].time, value: Math.round(-roc * 100) / 100 });
+                        }
+                        const series = chart.addLineSeries({
+                            color, lineWidth: 2,
+                            priceScaleId: 'gamma',
+                            lastValueVisible: true,
+                            priceLineVisible: true,
+                            crosshairMarkerVisible: true,
+                            title: 'GEX'
+                        });
+                        chart.priceScale('gamma').applyOptions({
+                            scaleMargins: { top: 0.7, bottom: 0.02 },
+                            autoScale: true,
+                            visible: true
+                        });
+                        series.setData(gammaLine);
+                        // Zero line
+                        const zLine = chart.addLineSeries({ color: 'rgba(255,255,255,0.15)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'gamma', lastValueVisible: false, priceLineVisible: false });
+                        zLine.setData(gammaLine.map(r => ({ time: r.time, value: 0 })));
+                        indicatorSeries[name] = [series, zLine];
+                    }
+                } catch (e) { console.warn('Gamma load failed:', e); }
+                break;
+            }
+            case 'cot': {
+                const color = params.color || '#45b7d1';
+                try {
+                    // COT proxy: cumulative money flow from SPY weekly candles
+                    const resp = await fetch('/api/candles?symbol=SPY&interval=1wk&count=200');
+                    const cotData = await resp.json();
+                    if (cotData.candles && cotData.candles.length > 1) {
+                        let cumFlow = 0;
+                        const cotLine = [];
+                        for (let i = 1; i < cotData.candles.length; i++) {
+                            const c = cotData.candles[i];
+                            const hl = c.high - c.low;
+                            if (hl > 0) {
+                                // Money Flow Multiplier × Volume
+                                const mfm = ((c.close - c.low) - (c.high - c.close)) / hl;
+                                cumFlow += mfm * (c.volume || 0) / 1e6;
+                            }
+                            cotLine.push({ time: c.time, value: Math.round(cumFlow * 10) / 10 });
+                        }
+                        const series = chart.addLineSeries({
+                            color, lineWidth: 2,
+                            priceScaleId: 'cot',
+                            lastValueVisible: true,
+                            priceLineVisible: true,
+                            crosshairMarkerVisible: true,
+                            title: 'COT'
+                        });
+                        chart.priceScale('cot').applyOptions({
+                            scaleMargins: { top: 0.7, bottom: 0.02 },
+                            autoScale: true,
+                            visible: true
+                        });
+                        series.setData(cotLine);
+                        // Zero line
+                        const zLine = chart.addLineSeries({ color: 'rgba(255,255,255,0.15)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, priceScaleId: 'cot', lastValueVisible: false, priceLineVisible: false });
+                        zLine.setData(cotLine.map(r => ({ time: r.time, value: 0 })));
+                        indicatorSeries[name] = [series, zLine];
+                    }
+                } catch (e) { console.warn('COT load failed:', e); }
                 break;
             }
             case 'rsi': {
@@ -534,6 +714,12 @@ const ChartEngine = (() => {
 
     function removeIndicator(name) {
         if (indicatorSeries[name]) {
+            // Special handling for divergence markers
+            if (indicatorSeries[name] === '_markers_') {
+                try { mainSeries.setMarkers([]); } catch (e) { }
+                delete indicatorSeries[name];
+                return;
+            }
             for (const s of indicatorSeries[name]) {
                 try { chart.removeSeries(s); } catch (e) { }
             }

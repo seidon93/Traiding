@@ -108,6 +108,8 @@
               <input type="checkbox" id="alertRepeatSound">
               <span class="toggle-label">🔁 Repeat</span>
             </label>
+            <input type="number" id="alertRepeatCount" value="3" min="1" max="50" class="alert-repeat-input"
+              title="Repeat count" placeholder="×">
           </div>
           <div class="alert-sound-settings">
             <div class="alert-sound-row">
@@ -162,6 +164,8 @@
               <input type="number" id="tradeBuyPrice" placeholder="Buy price" step="any" class="trade-input">
               <input type="number" id="tradeSellPrice" placeholder="Sell price" step="any" class="trade-input">
               <input type="number" id="tradeQty" placeholder="Qty" step="any" class="trade-input trade-qty">
+              <input type="number" id="tradeLeverage" placeholder="Leverage (0=none)" step="1" min="0" max="100"
+                value="0" class="trade-input" style="grid-column: span 2">
             </div>
             <div class="trade-form-actions">
               <button id="addTradeBtn" class="trade-save-btn">+ Add Trade</button>
@@ -491,6 +495,18 @@
             </div>
           </div>
 
+          <!-- SMA 50 -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma50" class="ind-toggle">
+              <span class="toggle-label">SMA 50</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma50-period" value="50" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma50-color" value="#3498db" class="ind-color">
+            </div>
+          </div>
+
           <!-- SMA 200 -->
           <div class="indicator-item">
             <label class="toggle-row">
@@ -545,6 +561,73 @@
               <input type="checkbox" data-indicator="volume" class="ind-toggle">
               <span class="toggle-label">Volume</span>
             </label>
+          </div>
+        </section>
+
+        <!-- Market Indicators -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20V10" />
+              <path d="M18 20V4" />
+              <path d="M6 20v-4" />
+            </svg>
+            Market Data
+          </h3>
+
+          <!-- VIX -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="vix" class="ind-toggle">
+              <span class="toggle-label">VIX (Fear Index)</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="vix-color" value="#ff6b6b" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Market Breadth -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="breadth" class="ind-toggle">
+              <span class="toggle-label">Market Breadth (A/D)</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="breadth-color" value="#4ecdc4" class="ind-color">
+            </div>
+          </div>
+
+          <!-- RSI Divergence -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="divergence" class="ind-toggle">
+              <span class="toggle-label">RSI Divergence</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="divergence-color" value="#ffd93d" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Gamma Exposure -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="gamma" class="ind-toggle">
+              <span class="toggle-label">Gamma Exposure</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="gamma-color" value="#c084fc" class="ind-color">
+            </div>
+          </div>
+
+          <!-- COT -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="cot" class="ind-toggle">
+              <span class="toggle-label">COT Data</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="cot-color" value="#45b7d1" class="ind-color">
+            </div>
           </div>
         </section>
 

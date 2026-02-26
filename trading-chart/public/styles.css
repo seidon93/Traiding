@@ -2060,3 +2060,22 @@ button {
   color: #c4b5fd;
   filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
 }
+
+/* ─── ALERT REPEAT INPUT ─────────────────────────────── */
+.alert-repeat-input {
+  width: 42px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+  margin-left: 4px;
+}
+
+.alert-repeat-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
