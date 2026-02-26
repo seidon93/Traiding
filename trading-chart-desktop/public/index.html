@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Chart Pro</title>
+  <meta name="description"
+    content="Professional trading chart with real-time stock and crypto data, multi-timeframe analysis, and technical indicators">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- ═══ TOP BAR ═══ -->
+  <header id="topBar">
+    <div class="top-left">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M3 17l4-4 4 4 6-8 4 4" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <defs>
+            <linearGradient id="g1" x1="3" y1="17" x2="21" y2="9">
+              <stop stop-color="#00d4aa" />
+              <stop offset="1" stop-color="#7b61ff" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>TradePro</span>
+      </div>
+      <div class="search-container">
+        <input type="text" id="tickerInput" placeholder="Search ticker... (AAPL, BTCUSDT)" autocomplete="off"
+          spellcheck="false">
+        <div id="searchResults" class="search-results"></div>
+      </div>
+      <div class="ticker-info" id="tickerInfo">
+        <span class="ticker-symbol" id="tickerSymbol">AAPL</span>
+        <span class="ticker-name" id="tickerName">Apple Inc.</span>
+        <span class="ticker-price" id="tickerPrice">—</span>
+        <span class="ticker-change" id="tickerChange">—</span>
+      </div>
+    </div>
+    <div class="top-center">
+      <div class="timeframe-bar" id="timeframeBar">
+        <button data-tf="1m">1m</button>
+        <button data-tf="5m">5m</button>
+        <button data-tf="15m">15m</button>
+        <button data-tf="1h">1H</button>
+        <button data-tf="4h">4H</button>
+        <button data-tf="1d" class="active">D</button>
+        <button data-tf="1wk">W</button>
+        <button data-tf="1mo">M</button>
+        <!-- Extended TF Dropdown -->
+        <div class="tf-dropdown-wrap">
+          <button class="tf-dropdown-trigger" id="tfDropdownTrigger" title="More timeframes">▾</button>
+          <div class="tf-dropdown" id="tfDropdown">
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Seconds</span>
+              <button data-tf="15s">15s</button>
+              <button data-tf="30s">30s</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Minutes</span>
+              <button data-tf="3m">3m</button>
+              <button data-tf="10m">10m</button>
+              <button data-tf="30m">30m</button>
+              <button data-tf="45m">45m</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Months</span>
+              <button data-tf="3mo">3M</button>
+              <button data-tf="6mo">6M</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Years</span>
+              <button data-tf="1y">1Y</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span id="cetClock" class="cet-clock"></span>
+      <span id="monthAlert" class="month-alert" style="display:none"></span>
+    </div>
+    <div class="top-right">
+      <!-- Alert Bell -->
+      <div class="alert-bell-wrap">
+        <button class="icon-btn alert-bell-btn" id="alertBellBtn" title="Price Alerts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span class="alert-badge" id="alertBadge" style="display:none">0</span>
+        </button>
+        <div class="alert-panel" id="alertPanel">
+          <div class="alert-panel-header">
+            <h4>⚡ Price Alerts</h4>
+          </div>
+          <!-- Sound controls -->
+          <div class="alert-sound-controls">
+            <label class="toggle-row">
+              <input type="checkbox" id="alertSoundEnabled" checked>
+              <span class="toggle-label">🔔 Sound</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="alertRepeatSound">
+              <span class="toggle-label">🔁 Repeat</span>
+            </label>
+            <input type="number" id="alertRepeatCount" value="3" min="1" max="50" class="alert-repeat-input"
+              title="Repeat count" placeholder="×">
+          </div>
+          <div class="alert-sound-settings">
+            <div class="alert-sound-row">
+              <label>Type</label>
+              <select id="alertSoundType" class="alert-select">
+                <option value="beep">Beep</option>
+                <option value="chime">Chime</option>
+                <option value="ping">Ping</option>
+              </select>
+            </div>
+            <div class="alert-sound-row">
+              <label>Vol</label>
+              <input type="range" id="alertVolume" min="0" max="100" value="50" class="alert-vol-slider">
+              <span id="alertVolLabel" class="alert-vol-label">50%</span>
+            </div>
+          </div>
+          <!-- Add alert form -->
+          <div class="alert-form">
+            <div class="alert-form-row">
+              <input type="number" id="alertPrice" placeholder="Price…" step="any" class="alert-price-input">
+              <input type="color" id="alertColor" value="#f5a623" class="alert-color-picker" title="Line color">
+              <button id="addAlertBtn" class="alert-add-btn">+</button>
+            </div>
+          </div>
+          <div class="alert-active-list" id="alertActiveList">
+            <div class="alert-empty">No active alerts</div>
+          </div>
+          <div class="alert-history-header">
+            <span>History</span>
+            <button id="clearAlertHistory" class="alert-clear-btn" title="Clear history">🗑</button>
+          </div>
+          <div class="alert-history-list" id="alertHistoryList">
+            <div class="alert-empty">No alerts triggered yet</div>
+          </div>
+        </div>
+      </div>
+      <!-- Trade Journal -->
+      <div class="trade-journal-wrap">
+        <button class="icon-btn trade-journal-btn" id="tradeJournalBtn" title="Trade Journal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </button>
+        <div class="trade-panel" id="tradePanel">
+          <div class="trade-panel-header">
+            <h4>📒 Trade Journal</h4>
+            <button id="clearAllTrades" class="alert-clear-btn" title="Clear all trades">🗑</button>
+          </div>
+          <div class="trade-form" id="tradeForm">
+            <div class="trade-form-grid">
+              <select id="tradeDirection" class="trade-input trade-direction">
+                <option value="long">⬆ Long</option>
+                <option value="short">⬇ Short</option>
+              </select>
+              <input type="text" id="tradeTicker" placeholder="Ticker" class="trade-input trade-ticker">
+              <input type="number" id="tradeBuyPrice" placeholder="Entry price" step="any" class="trade-input">
+              <input type="number" id="tradeSellPrice" placeholder="Exit price" step="any" class="trade-input">
+              <input type="number" id="tradeQty" placeholder="Qty" step="any" class="trade-input trade-qty">
+              <input type="number" id="tradeLeverage" placeholder="Leverage (0=none)" step="1" min="0" max="100"
+                value="0" class="trade-input" style="grid-column: span 2">
+            </div>
+            <div class="trade-form-actions">
+              <button id="addTradeBtn" class="trade-save-btn">+ Add Trade</button>
+              <button id="cancelEditTradeBtn" class="trade-cancel-btn" style="display:none">Cancel</button>
+            </div>
+          </div>
+          <div class="trade-list" id="tradeList">
+            <div class="alert-empty">No trades recorded</div>
+          </div>
+          <div class="trade-total" id="tradeTotal"></div>
+        </div>
+      </div>
+      <button class="icon-btn" id="toggleLeftSidebar" title="Toggle Left Panel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+        </svg>
+      </button>
+      <button class="icon-btn" id="toggleRightSidebar" title="Toggle Indicators">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="15" y1="3" x2="15" y2="21" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN LAYOUT ═══ -->
+  <main id="mainLayout">
+    <!-- LEFT SIDEBAR -->
+    <aside id="leftSidebar" class="sidebar left open">
+      <div class="sidebar-scroll">
+        <!-- Trend Analysis -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
+            Trend Analysis
+          </h3>
+          <div id="trendPanel" class="trend-grid">
+            <div class="trend-loading">Loading trends…</div>
+          </div>
+        </section>
+
+        <!-- Stop Loss -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Risk Management
+          </h3>
+          <div class="sl-controls">
+            <div class="sl-row">
+              <label>Risk %</label>
+              <input type="number" id="riskPercent" value="2" min="0.1" max="50" step="0.1">
+            </div>
+            <div class="sl-row">
+              <label>Entry Price</label>
+              <input type="number" id="entryPrice" placeholder="Auto" step="any">
+            </div>
+            <div class="sl-row">
+              <label>Stop Loss</label>
+              <span id="slPrice" class="sl-value">—</span>
+            </div>
+            <div class="sl-row">
+              <label>SL Distance</label>
+              <span id="slDistance" class="sl-value">—</span>
+            </div>
+            <label class="toggle-row">
+              <input type="checkbox" id="slEnabled">
+              <span class="toggle-label">Show SL Line</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Price Prediction -->
+        <section class="panel" id="predictionPanel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            Price Prediction
+          </h3>
+          <button id="calcPrediction" class="prediction-btn">⚡ Calculate</button>
+          <div class="prediction-tabs">
+            <button class="pred-tab active" data-pred-tab="short">Short-term</button>
+            <button class="pred-tab" data-pred-tab="long">Long-term</button>
+          </div>
+          <div id="predictionContent" class="prediction-content">
+            <div class="trend-loading" style="color:var(--text-muted)">Click Calculate to generate predictions</div>
+          </div>
+          <div class="prediction-controls">
+            <div class="sl-row">
+              <label>SL Multiplier</label>
+              <input type="range" id="predSLMultiplier" min="0.5" max="3" step="0.1" value="1" class="pred-slider">
+              <span id="predSLValue" class="sl-value" style="min-width:32px">1.0×</span>
+            </div>
+            <label class="toggle-row">
+              <input type="checkbox" id="predShowOnChart">
+              <span class="toggle-label">Show on Chart</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Budget Calculator -->
+        <section class="panel" id="budgetCalcPanel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="18" rx="2" />
+              <line x1="2" y1="9" x2="22" y2="9" />
+              <line x1="8" y1="9" x2="8" y2="21" />
+              <line x1="14" y1="9" x2="14" y2="21" />
+            </svg>
+            Budget Calculator
+          </h3>
+          <div class="budget-controls">
+            <div class="budget-row">
+              <label>Budget</label>
+              <div class="budget-input-group">
+                <input type="number" id="budgetAmount" value="10000" min="0" step="100" class="budget-input">
+                <select id="budgetCurrency" class="budget-currency-select">
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="CZK">CZK</option>
+                </select>
+              </div>
+            </div>
+            <div id="budgetResult" class="budget-result">
+              <div class="budget-result-row main">
+                <span class="budget-label">Shares</span>
+                <span id="budgetShares" class="budget-value">—</span>
+              </div>
+              <div class="budget-result-row">
+                <span class="budget-label">Price / Share</span>
+                <span id="budgetPricePerShare" class="budget-value">—</span>
+              </div>
+              <div class="budget-result-row">
+                <span class="budget-label">Total Cost</span>
+                <span id="budgetTotalCost" class="budget-value">—</span>
+              </div>
+              <div class="budget-result-row">
+                <span class="budget-label">Remaining</span>
+                <span id="budgetRemaining" class="budget-value">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Monday Range -->
+        <section class="panel" id="mondayRangePanel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Monday Range
+          </h3>
+          <div id="mondayRangeContent">
+            <div class="trend-loading">Loading…</div>
+          </div>
+          <label class="toggle-row">
+            <input type="checkbox" id="mondayRangeEnabled">
+            <span class="toggle-label">Show Monday Range</span>
+          </label>
+        </section>
+
+        <!-- Daily Ranges -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="17" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="17" y1="18" x2="3" y2="18" />
+            </svg>
+            Daily Range History
+          </h3>
+          <div class="range-mode-toggle">
+            <button id="rangeModePercent" class="range-mode-btn active">%</button>
+            <button id="rangeModePrice" class="range-mode-btn">$</button>
+            <button id="rangeModeHL" class="range-mode-btn">H/L</button>
+            <button id="rangeModeOC" class="range-mode-btn">O/C</button>
+          </div>
+          <div id="dailyRangesContent" class="daily-ranges-list">
+            <div class="trend-loading">Loading…</div>
+          </div>
+          <div class="range-chart-controls">
+            <label class="toggle-row">
+              <input type="checkbox" id="rangeChartEnabled">
+              <span class="toggle-label">Show on Chart</span>
+            </label>
+            <div class="range-chart-settings">
+              <label>Days</label>
+              <input type="number" id="rangeChartDays" value="5" min="1" max="30" class="ind-input">
+              <input type="color" id="rangeChartColor" value="#7b61ff" class="ind-color">
+            </div>
+            <div class="range-chart-settings">
+              <label>Line</label>
+              <select id="rangeChartLineStyle" class="ind-input">
+                <option value="0">Solid</option>
+                <option value="1">Dashed</option>
+                <option value="2" selected>Dotted</option>
+              </select>
+              <label>Width</label>
+              <input type="number" id="rangeChartLineWidth" value="2" min="1" max="5" class="ind-input">
+            </div>
+          </div>
+        </section>
+
+        <!-- Session HLOC -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Market Sessions
+          </h3>
+
+          <div class="session-group">
+            <div class="session-header">
+              <span class="session-name">London</span>
+              <span class="session-time">9:00 – 17:30</span>
+            </div>
+            <div class="session-controls">
+              <label class="toggle-row">
+                <input type="checkbox" id="londonSession">
+                <span class="toggle-label">HLOC Markers</span>
+              </label>
+              <label class="toggle-row">
+                <input type="checkbox" id="londonRange">
+                <span class="toggle-label">Range Area</span>
+              </label>
+              <input type="color" id="londonRangeColor" value="#4fc3f7" class="ind-color" title="London range color">
+            </div>
+          </div>
+
+          <div class="session-group">
+            <div class="session-header">
+              <span class="session-name">US</span>
+              <span class="session-time">15:30 – 22:00</span>
+            </div>
+            <div class="session-controls">
+              <label class="toggle-row">
+                <input type="checkbox" id="usSession">
+                <span class="toggle-label">HLOC Markers</span>
+              </label>
+              <label class="toggle-row">
+                <input type="checkbox" id="usRange">
+                <span class="toggle-label">Range Area</span>
+              </label>
+              <input type="color" id="usRangeColor" value="#ff7043" class="ind-color" title="US range color">
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <!-- CHART AREA -->
+    <div id="chartContainer">
+      <div id="chart"></div>
+      <div id="chartOverlay" class="chart-overlay">
+        <div id="crosshairInfo" class="crosshair-info"></div>
+      </div>
+      <button id="scrollToCurrent" class="scroll-to-current" title="Scroll to current">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="13 17 18 12 13 7"></polyline>
+          <polyline points="6 17 11 12 6 7"></polyline>
+        </svg>
+      </button>
+
+      <!-- Chart toolbar: % mode + currency -->
+      <div class="chart-toolbar">
+        <button class="chart-tool-btn" id="btnPercent" title="Percentage mode">%</button>
+        <div class="chart-tool-sep"></div>
+        <div class="currency-group" id="currencyGroup">
+          <button class="chart-tool-btn currency-btn active" data-currency="native">USD</button>
+          <button class="chart-tool-btn currency-btn" data-currency="EUR">EUR</button>
+          <button class="chart-tool-btn currency-btn" data-currency="GBP">GBP</button>
+          <button class="chart-tool-btn currency-btn" data-currency="CZK">CZK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside id="rightSidebar" class="sidebar right">
+      <div class="sidebar-scroll">
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+              <path d="M22 12A10 10 0 0 0 12 2v10z" />
+            </svg>
+            Indicators
+          </h3>
+
+          <!-- SMA -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma" class="ind-toggle">
+              <span class="toggle-label">SMA</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma-period" value="20" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma-color" value="#f5a623" class="ind-color">
+            </div>
+          </div>
+
+          <!-- EMA -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="ema" class="ind-toggle">
+              <span class="toggle-label">EMA</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="ema-period" value="21" min="1" max="500" class="ind-input">
+              <input type="color" data-param="ema-color" value="#7b61ff" class="ind-color">
+            </div>
+          </div>
+
+          <!-- SMA 50 -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma50" class="ind-toggle">
+              <span class="toggle-label">SMA 50</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma50-period" value="50" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma50-color" value="#3498db" class="ind-color">
+            </div>
+          </div>
+
+          <!-- SMA 200 -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="sma200" class="ind-toggle">
+              <span class="toggle-label">SMA 200</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="sma200-period" value="200" min="1" max="500" class="ind-input">
+              <input type="color" data-param="sma200-color" value="#e74c3c" class="ind-color">
+            </div>
+          </div>
+
+          <!-- RSI -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="rsi" class="ind-toggle">
+              <span class="toggle-label">RSI</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="rsi-period" value="14" min="1" max="100" class="ind-input">
+              <input type="color" data-param="rsi-color" value="#00d4aa" class="ind-color">
+            </div>
+          </div>
+
+          <!-- MACD -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="macd" class="ind-toggle">
+              <span class="toggle-label">MACD</span>
+            </label>
+            <div class="ind-settings">
+              <span class="ind-label">12/26/9</span>
+              <input type="color" data-param="macd-color" value="#2196F3" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Bollinger Bands -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="bb" class="ind-toggle">
+              <span class="toggle-label">Bollinger Bands</span>
+            </label>
+            <div class="ind-settings">
+              <input type="number" data-param="bb-period" value="20" min="1" max="200" class="ind-input">
+              <input type="color" data-param="bb-color" value="#9b59b6" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Volume -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="volume" class="ind-toggle">
+              <span class="toggle-label">Volume</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Market Indicators -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20V10" />
+              <path d="M18 20V4" />
+              <path d="M6 20v-4" />
+            </svg>
+            Market Data
+          </h3>
+
+          <!-- VIX -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="vix" class="ind-toggle">
+              <span class="toggle-label">VIX (Fear Index)</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="vix-color" value="#ff6b6b" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Market Breadth -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="breadth" class="ind-toggle">
+              <span class="toggle-label">Market Breadth (A/D)</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="breadth-color" value="#4ecdc4" class="ind-color">
+            </div>
+          </div>
+
+          <!-- RSI Divergence -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="divergence" class="ind-toggle">
+              <span class="toggle-label">RSI Divergence</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="divergence-color" value="#ffd93d" class="ind-color">
+            </div>
+          </div>
+
+          <!-- Gamma Exposure -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="gamma" class="ind-toggle">
+              <span class="toggle-label">Gamma Exposure</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="gamma-color" value="#c084fc" class="ind-color">
+            </div>
+          </div>
+
+          <!-- COT -->
+          <div class="indicator-item">
+            <label class="toggle-row">
+              <input type="checkbox" data-indicator="cot" class="ind-toggle">
+              <span class="toggle-label">COT Data</span>
+            </label>
+            <div class="ind-settings">
+              <input type="color" data-param="cot-color" value="#45b7d1" class="ind-color">
+            </div>
+          </div>
+        </section>
+
+        <!-- Multi-Timeframe Overlay -->
+        <section class="panel">
+          <h3 class="panel-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+              <polyline points="17 2 12 7 7 2" />
+            </svg>
+            Multi-Timeframe
+          </h3>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf1Enabled" class="mtf-toggle" data-mtf="1">
+              <span class="toggle-label">TF Overlay 1</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf1Select" class="mtf-select">
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h" selected>1H</option>
+                <option value="4h">4H</option>
+                <option value="1d">D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf1UpColor" value="#26a69a" class="ind-color" title="Up color">
+              <input type="color" id="mtf1DownColor" value="#ef5350" class="ind-color" title="Down color">
+            </div>
+          </div>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf2Enabled" class="mtf-toggle" data-mtf="2">
+              <span class="toggle-label">TF Overlay 2</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf2Select" class="mtf-select">
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1H</option>
+                <option value="4h" selected>4H</option>
+                <option value="1d">D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf2UpColor" value="#4fc3f7" class="ind-color" title="Up color">
+              <input type="color" id="mtf2DownColor" value="#ff7043" class="ind-color" title="Down color">
+            </div>
+          </div>
+
+          <div class="mtf-item">
+            <label class="toggle-row">
+              <input type="checkbox" id="mtf3Enabled" class="mtf-toggle" data-mtf="3">
+              <span class="toggle-label">TF Overlay 3</span>
+            </label>
+            <div class="ind-settings">
+              <select id="mtf3Select" class="mtf-select">
+                <option value="1m">1m</option>
+                <option value="5m">5m</option>
+                <option value="15m">15m</option>
+                <option value="1h">1H</option>
+                <option value="4h">4H</option>
+                <option value="1d" selected>D</option>
+                <option value="1wk">W</option>
+                <option value="1mo">M</option>
+              </select>
+              <input type="color" id="mtf3UpColor" value="#ab47bc" class="ind-color" title="Up color">
+              <input type="color" id="mtf3DownColor" value="#ffa726" class="ind-color" title="Down color">
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="indicators.js"></script>
+  <script src="chart.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

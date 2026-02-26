@@ -1,0 +1,56 @@
+{
+    "name": "trading-chart-pro",
+    "version": "1.0.0",
+    "description": "Trading Chart Pro - Professional Trading Analysis",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder --win",
+        "pack": "electron-builder --dir"
+    },
+    "author": "TradePro",
+    "license": "MIT",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.18.2"
+    },
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.tradepro.tradingchart",
+        "productName": "Trading Chart Pro",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "main.js",
+            "preload.js",
+            "server.js",
+            "public/**/*",
+            "node_modules/**/*",
+            "assets/**/*"
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "icon": "assets/icon.ico"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "Trading Chart Pro",
+            "installerIcon": "assets/icon.ico",
+            "uninstallerIcon": "assets/icon.ico"
+        }
+    }
+}
