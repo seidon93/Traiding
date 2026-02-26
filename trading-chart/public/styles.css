@@ -1446,6 +1446,12 @@ button {
 
 .alert-bell-btn {
   position: relative;
+  color: #f5a623;
+}
+
+.alert-bell-btn:hover {
+  color: #ffb84d;
+  filter: drop-shadow(0 0 4px rgba(245, 166, 35, 0.4));
 }
 
 .alert-badge {
@@ -1976,4 +1982,81 @@ button {
   background: rgba(239, 83, 80, 0.1);
   color: var(--candle-down);
   border: 1px solid rgba(239, 83, 80, 0.2);
+}
+
+/* ─── ENHANCED ALERT BUTTONS ──────────────────────────── */
+.alert-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.alert-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+  color: var(--candle-down);
+}
+
+.alert-clear-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.alert-item .alert-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 3px;
+  line-height: 1;
+  opacity: 0.9;
+  transition: all var(--transition-fast);
+}
+
+.alert-item .alert-toggle:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.alert-item .alert-toggle.off {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.alert-item .alert-edit {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 3px;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.alert-item .alert-edit:hover {
+  color: var(--accent-primary);
+  transform: scale(1.15);
+}
+
+/* ─── TRADE JOURNAL ICON ──────────────────────────────── */
+.trade-journal-btn {
+  color: #a78bfa;
+}
+
+.trade-journal-btn:hover {
+  color: #c4b5fd;
+  filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
 }

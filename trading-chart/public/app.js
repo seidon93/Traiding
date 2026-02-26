@@ -169,13 +169,20 @@
     function setupAutoRefresh() {
         if (refreshTimer) clearInterval(refreshTimer);
 
-        // Refresh quote every 30 seconds
+        // Determine refresh interval based on timeframe
+        const fastTFs = ['15s', '30s', '1m', '3m', '5m', '10m', '15m', '30m', '45m'];
+        const interval = fastTFs.includes(currentInterval) ? 10000 : 30000;
+
         refreshTimer = setInterval(async () => {
             try {
-                const quote = await DataService.getQuote(currentSymbol);
-                updateQuoteDisplay(quote);
+                // Refresh both quote and candles
+                const [quote] = await Promise.all([
+                    DataService.getQuote(currentSymbol),
+                    loadCandles()  // silently refresh chart candles
+                ]);
+                if (quote) updateQuoteDisplay(quote);
             } catch (e) { /* silent */ }
-        }, 30000);
+        }, interval);
     }
 
     // ─── Chart Toolbar (% + Currency) ────────────────────
@@ -286,13 +293,14 @@
         const budgetSymbol = getCurrencySymbol(budgetCurr);
 
         sharesEl.textContent = shares.toLocaleString();
-        priceEl.textContent = `${currSymbol}${ChartEngine.fmt(lastRawPrice)}`;
-        costEl.textContent = `${currSymbol}${ChartEngine.fmt(totalCost)}`;
-        remainEl.textContent = `${budgetSymbol}${ChartEngine.fmt(remaining / (budgetRateCache[`${budgetCurr}_${nativeCurrency}`] || 1))}`;
+        priceEl.textContent = `${currSymbol}${lastRawPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
+        costEl.textContent = `${currSymbol}${totalCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
+        const remainVal = remaining / (budgetRateCache[`${budgetCurr}_${nativeCurrency}`] || 1);
+        remainEl.textContent = `${budgetSymbol}${remainVal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
     }
 
     function getCurrencySymbol(code) {
-        const map = { USD: '$', EUR: '€', GBP: '£', CZK: 'Kč ' };
+        const map = { USD: '$ ', EUR: '€ ', GBP: '£ ', CZK: 'Kč ' };
         return map[code] || code + ' ';
     }
 
@@ -400,6 +408,7 @@
                 setActiveTF(btn);
                 currentInterval = btn.dataset.tf;
                 loadCandles();
+                setupAutoRefresh();
                 dropdown.classList.remove('open');
                 trigger.classList.remove('open');
             });
@@ -421,6 +430,7 @@
                 trigger.textContent = btn.textContent;
                 trigger.classList.add('active');
                 loadCandles();
+                setupAutoRefresh();
                 dropdown.classList.remove('open');
                 trigger.classList.remove('open');
             });
