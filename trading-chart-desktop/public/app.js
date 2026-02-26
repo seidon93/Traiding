@@ -79,15 +79,13 @@
                     nativeCurrency = 'USD';
                 }
 
-                // Update the native button label
-                const nativeBtn = document.querySelector('.currency-btn[data-currency="native"]');
+                // Highlight the native currency button, show all buttons
+                document.querySelectorAll('.currency-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.display = '';
+                });
+                const nativeBtn = document.querySelector(`.currency-btn[data-currency="${nativeCurrency}"]`);
                 if (nativeBtn) {
-                    nativeBtn.textContent = nativeCurrency;
-                    // Reset all currency buttons — all always visible
-                    document.querySelectorAll('.currency-btn').forEach(b => {
-                        b.classList.remove('active');
-                        b.style.display = '';
-                    });
                     nativeBtn.classList.add('active');
                 }
 
@@ -205,7 +203,7 @@
 
                 const targetCurrency = btn.dataset.currency;
 
-                if (targetCurrency === 'native') {
+                if (targetCurrency === nativeCurrency) {
                     // Reset to native (no conversion)
                     ChartEngine.setCurrency(null, null);
                     if (lastRawPrice) {
