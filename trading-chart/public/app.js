@@ -789,6 +789,7 @@
         const panel = document.getElementById('tradePanel');
         const addBtn = document.getElementById('addTradeBtn');
         const cancelBtn = document.getElementById('cancelEditTradeBtn');
+        const clearAllBtn = document.getElementById('clearAllTrades');
 
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -802,7 +803,17 @@
             }
         });
 
+        // Direction selector visual toggle
+        const dirSelect = document.getElementById('tradeDirection');
+        function updateDirClass() {
+            dirSelect.classList.remove('long-selected', 'short-selected');
+            dirSelect.classList.add(dirSelect.value === 'short' ? 'short-selected' : 'long-selected');
+        }
+        dirSelect.addEventListener('change', updateDirClass);
+        updateDirClass();
+
         addBtn.addEventListener('click', () => {
+            const direction = document.getElementById('tradeDirection').value;
             const ticker = document.getElementById('tradeTicker').value.trim().toUpperCase();
             const buyPrice = parseFloat(document.getElementById('tradeBuyPrice').value);
             const sellPrice = parseFloat(document.getElementById('tradeSellPrice').value);
@@ -811,18 +822,28 @@
 
             if (!ticker || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(qty) || qty <= 0) return;
 
+            // Auto CET timestamp
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-GB', {
+                timeZone: 'Europe/Berlin',
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            });
+
             if (editingTradeId !== null) {
                 const t = trades.find(x => x.id === editingTradeId);
                 if (t) {
-                    t.ticker = ticker; t.buyPrice = buyPrice;
-                    t.sellPrice = sellPrice; t.qty = qty;
-                    t.leverage = leverage;
+                    t.direction = direction; t.ticker = ticker;
+                    t.buyPrice = buyPrice; t.sellPrice = sellPrice;
+                    t.qty = qty; t.leverage = leverage;
+                    // keep original timestamp on edit
                 }
                 editingTradeId = null;
                 addBtn.textContent = '+ Add Trade';
                 cancelBtn.style.display = 'none';
             } else {
-                trades.push({ id: ++tradeIdCounter, ticker, buyPrice, sellPrice, qty, leverage });
+                trades.push({ id: ++tradeIdCounter, direction, ticker, buyPrice, sellPrice, qty, leverage, time: timeStr });
             }
 
             clearTradeForm();
@@ -837,10 +858,21 @@
             clearTradeForm();
         });
 
+        // Clear all trades
+        clearAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (trades.length === 0) return;
+            trades = [];
+            tradeIdCounter = 0;
+            renderTrades();
+            saveTradesToStorage();
+        });
+
         loadTradesFromStorage();
     }
 
     function clearTradeForm() {
+        document.getElementById('tradeDirection').value = 'long';
         document.getElementById('tradeTicker').value = '';
         document.getElementById('tradeBuyPrice').value = '';
         document.getElementById('tradeSellPrice').value = '';
@@ -851,6 +883,7 @@
     function startEditTrade(id) {
         const t = trades.find(x => x.id === id);
         if (!t) return;
+        document.getElementById('tradeDirection').value = t.direction || 'long';
         document.getElementById('tradeTicker').value = t.ticker;
         document.getElementById('tradeBuyPrice').value = t.buyPrice;
         document.getElementById('tradeSellPrice').value = t.sellPrice;
@@ -880,28 +913,41 @@
 
         let totalPL = 0;
         list.innerHTML = trades.map(t => {
-            const basePL = (t.sellPrice - t.buyPrice) * t.qty;
+            const dir = t.direction || 'long';
+            const isShort = dir === 'short';
+            const basePL = isShort
+                ? (t.buyPrice - t.sellPrice) * t.qty
+                : (t.sellPrice - t.buyPrice) * t.qty;
             const lev = (t.leverage && t.leverage > 1) ? t.leverage : 1;
             const pl = basePL * lev;
             totalPL += pl;
             const plClass = pl >= 0 ? 'profit' : 'loss';
             const plSign = pl >= 0 ? '+' : '';
-            const levBadge = lev > 1 ? `<span style="font-size:9px;color:var(--accent-primary);margin-left:2px">${lev}×</span>` : '';
+            const levBadge = lev > 1 ? ` <span style="font-size:9px;color:var(--accent-primary)">${lev}×</span>` : '';
+            const dirLabel = isShort
+                ? '<span style="color:var(--candle-down);font-weight:700">⬇ SHORT</span>'
+                : '<span style="color:var(--candle-up);font-weight:700">⬆ LONG</span>';
+            const timeLabel = t.time || '';
             return `
-                <div class="trade-item">
-                    <span class="trade-item-ticker">${t.ticker}${levBadge}</span>
-                    <span class="trade-item-detail">
-                        <span>Buy: ${t.buyPrice.toLocaleString()}</span>
-                        <span>Sell: ${t.sellPrice.toLocaleString()}</span>
-                    </span>
-                    <span class="trade-item-detail">
-                        <span>Qty: ${t.qty}</span>
-                    </span>
-                    <span class="trade-item-pl ${plClass}">${plSign}${pl.toFixed(2)}</span>
-                    <span class="trade-item-actions">
-                        <button data-id="${t.id}" class="trade-edit-btn" title="Edit">✏️</button>
-                        <button data-id="${t.id}" class="trade-del-btn" title="Delete">✕</button>
-                    </span>
+                <div class="trade-item ${isShort ? 'short-trade' : 'long-trade'}">
+                    <div class="trade-item-header">
+                        <span class="trade-item-ticker">${dirLabel} ${t.ticker}${levBadge}</span>
+                        <span class="trade-item-time">${timeLabel}</span>
+                    </div>
+                    <div class="trade-item-body">
+                        <span class="trade-item-detail">
+                            <span>Entry: ${t.buyPrice.toLocaleString()}</span>
+                            <span>Exit: ${t.sellPrice.toLocaleString()}</span>
+                        </span>
+                        <span class="trade-item-detail">
+                            <span>Qty: ${t.qty}</span>
+                        </span>
+                        <span class="trade-item-pl ${plClass}">${plSign}${pl.toFixed(2)}</span>
+                        <span class="trade-item-actions">
+                            <button data-id="${t.id}" class="trade-edit-btn" title="Edit">✏️</button>
+                            <button data-id="${t.id}" class="trade-del-btn" title="Delete">✕</button>
+                        </span>
+                    </div>
                 </div>`;
         }).join('');
 

@@ -157,12 +157,17 @@
         <div class="trade-panel" id="tradePanel">
           <div class="trade-panel-header">
             <h4>📒 Trade Journal</h4>
+            <button id="clearAllTrades" class="alert-clear-btn" title="Clear all trades">🗑</button>
           </div>
           <div class="trade-form" id="tradeForm">
             <div class="trade-form-grid">
+              <select id="tradeDirection" class="trade-input trade-direction">
+                <option value="long">⬆ Long</option>
+                <option value="short">⬇ Short</option>
+              </select>
               <input type="text" id="tradeTicker" placeholder="Ticker" class="trade-input trade-ticker">
-              <input type="number" id="tradeBuyPrice" placeholder="Buy price" step="any" class="trade-input">
-              <input type="number" id="tradeSellPrice" placeholder="Sell price" step="any" class="trade-input">
+              <input type="number" id="tradeBuyPrice" placeholder="Entry price" step="any" class="trade-input">
+              <input type="number" id="tradeSellPrice" placeholder="Exit price" step="any" class="trade-input">
               <input type="number" id="tradeQty" placeholder="Qty" step="any" class="trade-input trade-qty">
               <input type="number" id="tradeLeverage" placeholder="Leverage (0=none)" step="1" min="0" max="100"
                 value="0" class="trade-input" style="grid-column: span 2">
