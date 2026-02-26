@@ -54,10 +54,70 @@
         <button data-tf="1d" class="active">D</button>
         <button data-tf="1wk">W</button>
         <button data-tf="1mo">M</button>
+        <!-- Extended TF Dropdown -->
+        <div class="tf-dropdown-wrap">
+          <button class="tf-dropdown-trigger" id="tfDropdownTrigger" title="More timeframes">▾</button>
+          <div class="tf-dropdown" id="tfDropdown">
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Seconds</span>
+              <button data-tf="15s">15s</button>
+              <button data-tf="30s">30s</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Minutes</span>
+              <button data-tf="3m">3m</button>
+              <button data-tf="10m">10m</button>
+              <button data-tf="30m">30m</button>
+              <button data-tf="45m">45m</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Months</span>
+              <button data-tf="3mo">3M</button>
+              <button data-tf="6mo">6M</button>
+            </div>
+            <div class="tf-dropdown-group">
+              <span class="tf-dropdown-label">Years</span>
+              <button data-tf="1y">1Y</button>
+            </div>
+          </div>
+        </div>
       </div>
+      <span id="cetClock" class="cet-clock"></span>
     </div>
     <div class="top-right">
-      <span id="cetClock" class="cet-clock"></span>
+      <!-- Alert Bell -->
+      <div class="alert-bell-wrap">
+        <button class="icon-btn alert-bell-btn" id="alertBellBtn" title="Price Alerts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span class="alert-badge" id="alertBadge" style="display:none">0</span>
+        </button>
+        <div class="alert-panel" id="alertPanel">
+          <div class="alert-panel-header">
+            <h4>⚡ Price Alerts</h4>
+            <label class="toggle-row alert-sound-toggle">
+              <input type="checkbox" id="alertSoundEnabled" checked>
+              <span class="toggle-label">🔔 Sound</span>
+            </label>
+          </div>
+          <div class="alert-form">
+            <div class="alert-form-row">
+              <input type="number" id="alertPrice" placeholder="Price…" step="any" class="alert-price-input">
+              <input type="color" id="alertColor" value="#f5a623" class="alert-color-picker" title="Line color">
+              <button id="addAlertBtn" class="alert-add-btn">+</button>
+            </div>
+          </div>
+          <div class="alert-active-list" id="alertActiveList">
+            <div class="alert-empty">No active alerts</div>
+          </div>
+          <div class="alert-history-header">History</div>
+          <div class="alert-history-list" id="alertHistoryList">
+            <div class="alert-empty">No alerts triggered yet</div>
+          </div>
+        </div>
+      </div>
       <button class="icon-btn" id="toggleLeftSidebar" title="Toggle Left Panel">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="18" height="18" rx="2" />

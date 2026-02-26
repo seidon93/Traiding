@@ -843,6 +843,35 @@ const ChartEngine = (() => {
         }
     }
 
+    // ─── Alert Lines ──────────────────────────────────────
+    const alertLines = {};  // id -> priceLine
+
+    function addAlertLine(id, price, color) {
+        removeAlertLine(id);
+        alertLines[id] = mainSeries.createPriceLine({
+            price: price,
+            color: color,
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: '⚡ Alert',
+            lineVisible: true
+        });
+    }
+
+    function removeAlertLine(id) {
+        if (alertLines[id]) {
+            try { mainSeries.removePriceLine(alertLines[id]); } catch (e) { }
+            delete alertLines[id];
+        }
+    }
+
+    function clearAllAlertLines() {
+        for (const id of Object.keys(alertLines)) {
+            removeAlertLine(id);
+        }
+    }
+
     return {
         init, setData, getData, resize,
         setCurrentPriceLine, setSLPriceLine, removeSLLine,
@@ -854,6 +883,7 @@ const ChartEngine = (() => {
         addDailyRangeOverlay, clearDailyRangeOverlay,
         drawPredictionLines, clearPredictionLines,
         togglePercentMode, setCurrency, getActiveCurrency,
-        getIndicatorParams, fmt
+        getIndicatorParams, fmt,
+        addAlertLine, removeAlertLine, clearAllAlertLines
     };
 })();

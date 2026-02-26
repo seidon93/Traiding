@@ -38,25 +38,29 @@ app.get('/api/candles', async (req, res) => {
 });
 
 async function getStockCandles(req, res, symbol, interval, count) {
-  const intervalMap = {
-    '1m': '1m', '5m': '5m', '15m': '15m',
-    '1h': '60m', '4h': '60m',
-    '1d': '1d', '1wk': '1wk', '1mo': '1mo'
+  // Map custom intervals to the closest Yahoo-supported fetch interval + aggregation
+  const fetchConfig = {
+    '15s': { fetch: '1m', range: '7d', agg: 1 },    // no sub-minute on YF, show 1m
+    '30s': { fetch: '1m', range: '7d', agg: 1 },
+    '1m': { fetch: '1m', range: '7d', agg: 1 },
+    '3m': { fetch: '1m', range: '7d', agg: 3 },
+    '5m': { fetch: '5m', range: '60d', agg: 1 },
+    '10m': { fetch: '5m', range: '60d', agg: 2 },
+    '15m': { fetch: '15m', range: '60d', agg: 1 },
+    '30m': { fetch: '15m', range: '60d', agg: 2 },
+    '45m': { fetch: '15m', range: '60d', agg: 3 },
+    '1h': { fetch: '60m', range: '2y', agg: 1 },
+    '4h': { fetch: '60m', range: '2y', agg: 4 },
+    '1d': { fetch: '1d', range: '10y', agg: 1 },
+    '1wk': { fetch: '1wk', range: 'max', agg: 1 },
+    '1mo': { fetch: '1mo', range: 'max', agg: 1 },
+    '3mo': { fetch: '1mo', range: 'max', agg: 3 },
+    '6mo': { fetch: '1mo', range: 'max', agg: 6 },
+    '1y': { fetch: '1mo', range: 'max', agg: 12 },
   };
-  const yhInterval = intervalMap[interval] || '1d';
-
-  // Determine range based on interval
-  let range;
-  switch (interval) {
-    case '1m': range = '7d'; break;
-    case '5m': range = '60d'; break;
-    case '15m': range = '60d'; break;
-    case '1h': case '4h': range = '2y'; break;
-    case '1d': range = '10y'; break;
-    case '1wk': range = 'max'; break;
-    case '1mo': range = 'max'; break;
-    default: range = '5y';
-  }
+  const cfg = fetchConfig[interval] || { fetch: '1d', range: '5y', agg: 1 };
+  const yhInterval = cfg.fetch;
+  const range = cfg.range;
 
   const url = `${YF_BASE}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${yhInterval}&range=${range}&includePrePost=false`;
   const data = await yfFetch(url);
@@ -80,9 +84,9 @@ async function getStockCandles(req, res, symbol, interval, count) {
     }
   }
 
-  // Build 4h candles from 1h data
-  if (interval === '4h') {
-    candles = build4hCandles(candles);
+  // Aggregate candles if needed (e.g. 3m = 3×1m, 10m = 2×5m, etc.)
+  if (cfg.agg > 1) {
+    candles = buildAggregatedCandles(candles, cfg.agg);
   }
 
   if (candles.length > count) {
@@ -90,6 +94,25 @@ async function getStockCandles(req, res, symbol, interval, count) {
   }
 
   res.json({ candles, meta: { symbol: meta.symbol, currency: meta.currency, exchangeName: meta.exchangeName, instrumentType: meta.instrumentType } });
+}
+
+// Generic aggregation: group N consecutive source candles into 1
+function buildAggregatedCandles(candles, groupSize) {
+  const result = [];
+  for (let i = 0; i < candles.length; i += groupSize) {
+    const group = candles.slice(i, i + groupSize);
+    if (group.length === 0) continue;
+    const agg = {
+      time: group[0].time,
+      open: group[0].open,
+      high: Math.max(...group.map(c => c.high)),
+      low: Math.min(...group.map(c => c.low)),
+      close: group[group.length - 1].close,
+      volume: group.reduce((s, c) => s + c.volume, 0)
+    };
+    result.push(agg);
+  }
+  return result;
 }
 
 function build4hCandles(hourlyCandles) {
@@ -111,21 +134,36 @@ function build4hCandles(hourlyCandles) {
 }
 
 async function getCryptoCandles(req, res, symbol, interval, count) {
-  const intervalMap = {
-    '1m': '1m', '5m': '5m', '15m': '15m',
-    '1h': '1h', '4h': '4h',
-    '1d': '1d', '1wk': '1w', '1mo': '1M'
+  // Binance supports: 1s,1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
+  const fetchConfig = {
+    '15s': { fetch: '1m', agg: 1 },  // Binance min is 1s but 15s not native => show 1m
+    '30s': { fetch: '1m', agg: 1 },
+    '1m': { fetch: '1m', agg: 1 },
+    '3m': { fetch: '3m', agg: 1 },
+    '5m': { fetch: '5m', agg: 1 },
+    '10m': { fetch: '5m', agg: 2 },
+    '15m': { fetch: '15m', agg: 1 },
+    '30m': { fetch: '30m', agg: 1 },
+    '45m': { fetch: '15m', agg: 3 },
+    '1h': { fetch: '1h', agg: 1 },
+    '4h': { fetch: '4h', agg: 1 },
+    '1d': { fetch: '1d', agg: 1 },
+    '1wk': { fetch: '1w', agg: 1 },
+    '1mo': { fetch: '1M', agg: 1 },
+    '3mo': { fetch: '1M', agg: 3 },
+    '6mo': { fetch: '1M', agg: 6 },
+    '1y': { fetch: '1M', agg: 12 },
   };
-  const binInterval = intervalMap[interval] || '1d';
-  const limit = Math.min(count, 1000);
+  const cfg = fetchConfig[interval] || { fetch: '1d', agg: 1 };
+  const limit = Math.min(count * cfg.agg, 1000);
 
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol.toUpperCase()}&interval=${binInterval}&limit=${limit}`;
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol.toUpperCase()}&interval=${cfg.fetch}&limit=${limit}`;
   const response = await fetch(url);
   const data = await response.json();
 
   if (data.code) throw new Error(data.msg || 'Binance API error');
 
-  const candles = data.map(k => ({
+  let candles = data.map(k => ({
     time: Math.floor(k[0] / 1000),
     open: parseFloat(k[1]),
     high: parseFloat(k[2]),
@@ -133,6 +171,10 @@ async function getCryptoCandles(req, res, symbol, interval, count) {
     close: parseFloat(k[4]),
     volume: parseFloat(k[5])
   }));
+
+  if (cfg.agg > 1) {
+    candles = buildAggregatedCandles(candles, cfg.agg);
+  }
 
   res.json({ candles, meta: { symbol, type: 'crypto' } });
 }

@@ -498,8 +498,8 @@ const Sidebar = (() => {
         // Support / Resistance
         if (pred.support || pred.resistance) {
             html += '<div class="pred-sr">';
-            if (pred.support) html += `<span><span class="sr-label">Support: </span><span class="sr-val" style="color:var(--candle-up)">${fmt(pred.support)}</span></span>`;
-            if (pred.resistance) html += `<span><span class="sr-label">Resistance: </span><span class="sr-val" style="color:var(--candle-down)">${fmt(pred.resistance)}</span></span>`;
+            if (pred.support) html += `<span><span class="sr-label">Support</span><span class="sr-val" style="color:var(--candle-up)">${fmt(pred.support)}</span></span>`;
+            if (pred.resistance) html += `<span><span class="sr-label">Resistance</span><span class="sr-val" style="color:var(--candle-down)">${fmt(pred.resistance)}</span></span>`;
             html += '</div>';
         }
 

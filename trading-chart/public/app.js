@@ -22,6 +22,7 @@
         setupChartToolbar();
         setupBudgetCalculator();
         startCETClock();
+        setupAlerts();
 
         // Initial load
         loadTicker(currentSymbol);
@@ -45,6 +46,12 @@
         // Reset currency to native on ticker change
         ChartEngine.setCurrency(null, null);
         budgetRateCache = {};
+        // Clear alerts on ticker change
+        ChartEngine.clearAllAlertLines();
+        alerts = [];
+        alertHistory = [];
+        updateAlertBadge();
+        renderAlerts();
 
         // Load all data in parallel
         try {
@@ -149,6 +156,9 @@
 
         // Store raw price for currency recalc & budget
         lastRawPrice = quote.price;
+
+        // Check alerts against current price
+        checkAlerts(quote.price);
 
         // Recalculate budget with new price
         recalcBudget();
@@ -380,14 +390,65 @@
     // ─── Timeframe Buttons ────────────────────────────────
     function setupTimeframes() {
         const bar = document.getElementById('timeframeBar');
-        bar.querySelectorAll('button').forEach(btn => {
+        const dropdown = document.getElementById('tfDropdown');
+        const trigger = document.getElementById('tfDropdownTrigger');
+
+        // Main TF bar buttons
+        bar.querySelectorAll(':scope > button[data-tf]').forEach(btn => {
             btn.addEventListener('click', () => {
-                bar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                setActiveTF(btn);
                 currentInterval = btn.dataset.tf;
                 loadCandles();
+                dropdown.classList.remove('open');
+                trigger.classList.remove('open');
             });
         });
+
+        // Dropdown trigger toggle
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+            trigger.classList.toggle('open');
+        });
+
+        // Dropdown TF buttons
+        dropdown.querySelectorAll('button[data-tf]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setActiveTF(btn);
+                currentInterval = btn.dataset.tf;
+                trigger.textContent = btn.textContent;
+                trigger.classList.add('active');
+                loadCandles();
+                dropdown.classList.remove('open');
+                trigger.classList.remove('open');
+            });
+        });
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.tf-dropdown-wrap')) {
+                dropdown.classList.remove('open');
+                trigger.classList.remove('open');
+            }
+        });
+    }
+
+    function setActiveTF(activeBtn) {
+        // Clear active from main bar
+        document.querySelectorAll('#timeframeBar > button[data-tf]').forEach(b => b.classList.remove('active'));
+        // Clear active from dropdown
+        document.querySelectorAll('#tfDropdown button[data-tf]').forEach(b => b.classList.remove('active'));
+        // Clear trigger active
+        const trigger = document.getElementById('tfDropdownTrigger');
+        trigger.classList.remove('active');
+
+        // If from main bar, reset trigger text
+        if (activeBtn.closest('#timeframeBar') && !activeBtn.closest('.tf-dropdown')) {
+            trigger.textContent = '▾';
+        }
+
+        activeBtn.classList.add('active');
     }
 
     async function loadCandles() {
@@ -408,4 +469,176 @@
             console.error('Failed to load candles:', e);
         }
     }
+
+    // ─── Price Alert System ──────────────────────────────
+    let alerts = [];        // { id, price, color, active }
+    let alertHistory = [];  // { price, color, time }
+    let alertIdCounter = 0;
+
+    function setupAlerts() {
+        const bellBtn = document.getElementById('alertBellBtn');
+        const panel = document.getElementById('alertPanel');
+        const addBtn = document.getElementById('addAlertBtn');
+        const priceInput = document.getElementById('alertPrice');
+        const colorInput = document.getElementById('alertColor');
+
+        // Toggle panel
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panel.classList.toggle('open');
+        });
+
+        // Close panel on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.alert-bell-wrap')) {
+                panel.classList.remove('open');
+            }
+        });
+
+        // Add alert
+        addBtn.addEventListener('click', () => {
+            const price = parseFloat(priceInput.value);
+            if (!price || price <= 0) return;
+            addAlert(price, colorInput.value);
+            priceInput.value = '';
+        });
+
+        // Enter key to add
+        priceInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addBtn.click();
+        });
+    }
+
+    function addAlert(price, color) {
+        const id = ++alertIdCounter;
+        alerts.push({ id, price, color, active: true });
+        ChartEngine.addAlertLine(id, price, color);
+        updateAlertBadge();
+        renderAlerts();
+    }
+
+    function removeAlert(id) {
+        alerts = alerts.filter(a => a.id !== id);
+        ChartEngine.removeAlertLine(id);
+        updateAlertBadge();
+        renderAlerts();
+    }
+
+    function updateAlertBadge() {
+        const badge = document.getElementById('alertBadge');
+        const count = alerts.filter(a => a.active).length;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderAlerts() {
+        const activeList = document.getElementById('alertActiveList');
+        const historyList = document.getElementById('alertHistoryList');
+
+        // Active alerts
+        if (alerts.length === 0) {
+            activeList.innerHTML = '<div class="alert-empty">No active alerts</div>';
+        } else {
+            activeList.innerHTML = alerts.map(a => `
+                <div class="alert-item" data-alert-id="${a.id}">
+                    <span class="alert-dot" style="background:${a.color}"></span>
+                    <span class="alert-item-price">${ChartEngine.fmt(a.price)}</span>
+                    <button class="alert-delete" data-alert-id="${a.id}">✕</button>
+                </div>
+            `).join('');
+
+            // Delete handlers
+            activeList.querySelectorAll('.alert-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeAlert(parseInt(btn.dataset.alertId));
+                });
+            });
+        }
+
+        // History
+        if (alertHistory.length === 0) {
+            historyList.innerHTML = '<div class="alert-empty">No alerts triggered yet</div>';
+        } else {
+            historyList.innerHTML = alertHistory.map(h => `
+                <div class="alert-history-item">
+                    <span class="alert-dot" style="background:${h.color}"></span>
+                    <span class="ah-price">${ChartEngine.fmt(h.price)}</span>
+                    <span class="ah-time">${h.time}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    function checkAlerts(currentPrice) {
+        if (!currentPrice || alerts.length === 0) return;
+
+        const toTrigger = [];
+        alerts = alerts.filter(a => {
+            if (!a.active) return true;
+            // Check if price crossed the alert level
+            const crossed = (lastRawPrice && (
+                (lastRawPrice <= a.price && currentPrice >= a.price) ||
+                (lastRawPrice >= a.price && currentPrice <= a.price)
+            )) || Math.abs(currentPrice - a.price) / a.price < 0.001;
+
+            if (crossed) {
+                toTrigger.push(a);
+                return false; // remove from active
+            }
+            return true;
+        });
+
+        for (const a of toTrigger) {
+            ChartEngine.removeAlertLine(a.id);
+
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-GB', {
+                timeZone: 'Europe/Berlin',
+                day: '2-digit', month: 'short',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            });
+
+            alertHistory.unshift({ price: a.price, color: a.color, time: timeStr });
+
+            // Play sound if enabled
+            const soundEnabled = document.getElementById('alertSoundEnabled').checked;
+            if (soundEnabled) {
+                playAlertSound();
+            }
+        }
+
+        if (toTrigger.length > 0) {
+            updateAlertBadge();
+            renderAlerts();
+        }
+    }
+
+    function playAlertSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // Double beep
+            [0, 0.2].forEach(delay => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.15);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.15);
+            });
+        } catch (e) {
+            console.warn('Could not play alert sound:', e);
+        }
+    }
 })();
+
